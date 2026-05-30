@@ -25,6 +25,10 @@ describe('detectSignals', () => {
     const s = detectSignals({ ...base, rating: 1, text: 'absolutely love it, excellent great quality' }, []);
     expect(s.find(x => x.key === 'rating_mismatch')?.delta).toBeLessThan(0);
   });
+  it('does NOT flag a positive long 5-star review as a mismatch', () => {
+    const s = detectSignals({ ...base, rating: 5, text: 'A good place for food and great ambience, my kid enjoyed the continental food and we tried Bengali fish and chicken, authentic Bengali food, must try in and around JP Nagar, dungeon theme indeed' }, []);
+    expect(s.find(x => x.key === 'rating_mismatch')).toBeUndefined();
+  });
   it('penalizes near-duplicate of a sibling', () => {
     const sib = { ...base, id: 'r2' };
     const s = detectSignals({ ...base, id: 'r3' }, [sib]);

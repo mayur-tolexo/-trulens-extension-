@@ -3,8 +3,19 @@ import { adapterFor } from '../adapters/registry';
 import { scoreReview, aggregate, verdictFor } from '../scoring-core';
 import { renderBadge } from '../ui/badge';
 import { renderDetailCard, showDeepResult, applyDeepResult } from '../ui/detailCard';
+import { updateOverlay } from '../ui/overlay';
 import type { ExtractedReview } from '../adapters/types';
 import type { Review, ScoreResult } from '../types';
+
+/** Best-effort page name: adapter selector first, else cleaned document.title. */
+function cleanTitle(): string | null {
+  const t = document.title
+    .replace(/\s*[-|–—]\s*Google Maps.*$/i, '')
+    .replace(/^Amazon\.[a-z.]+\s*:?\s*/i, '')
+    .replace(/\s*[-|–—]\s*(Buy|Online|Amazon|Flipkart).*$/i, '')
+    .trim();
+  return t.length >= 2 ? t : null;
+}
 
 const TAG = '[TruLens]';
 const log = (...a: unknown[]) => console.log(TAG, ...a);
@@ -62,6 +73,12 @@ if (adapter) {
 
 function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
   const scored = new Set<string>();
+  let settleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const refresh = (scanning: boolean) => {
+    const name = (a.pageName && a.pageName(document)) || cleanTitle();
+    updateOverlay(name, aggregate([...pageResults.values()]), scanning);
+  };
 
   const scan = debounce(() => {
     const found = a.extractReviews(document);
@@ -87,6 +104,10 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
       renderBadge(mount.container, mount.position, result, () =>
         renderDetailCard(f.anchor, result, () => deepAnalyze(f, all)));
     }
+    // Keep the on-page panel live; show the progress bar briefly, then settle.
+    refresh(true);
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => refresh(false), 1500);
   }, 250);
 
   function deepAnalyze(f: ExtractedReview, siblings: Review[]) {
@@ -98,19 +119,21 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
           const r = resp.result;
           const verdict = r.verdict ?? verdictFor(r.score);
           applyDeepResult({ score: r.score, verdict, reasoning: r.reasoning });
-          // Update stored result so popup summary reflects LLM values
+          // Update stored result so the popup + overlay reflect LLM values
           const updated: ScoreResult = {
             ...pageResults.get(f.review.id)!,
             score: r.score,
             verdict
           };
           pageResults.set(f.review.id, updated);
+          refresh(false);
         } else {
           showDeepResult('Deep analysis unavailable.');
         }
       });
   }
 
+  refresh(true);            // show the panel immediately in its "scanning" state
   scan();
   new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
 }

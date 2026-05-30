@@ -40,7 +40,11 @@ export function detectSignals(review: Review, siblings: Review[]): Signal[] {
   if (review.rating != null) {
     const sent = sentimentScore(text);
     const norm = (review.rating - 3) / 2; // -1..1
-    if (Math.abs(norm - sent) > 0.8 && Math.abs(sent) > 0.05)
+    // Only a mismatch when the text sentiment clearly OPPOSES the star rating
+    // (glowing text with 1 star, or negative text with 5 stars). Weakly-positive
+    // long text next to 5 stars is NOT a mismatch — most genuine reviews use
+    // words outside the small lexicon, so their measured sentiment is mild.
+    if (Math.abs(sent) > 0.08 && Math.abs(norm) > 0.25 && Math.sign(sent) !== Math.sign(norm))
       out.push({ key: 'rating_mismatch', label: 'Rating disagrees with the text', delta: -14 });
   }
 

@@ -315,3 +315,44 @@
   line-height: 1.5;
   white-space: pre-wrap;
 }
+
+/* ── On-page floating trust panel ── */
+.trulens-overlay{position:fixed;top:88px;right:16px;z-index:2147483646;width:250px;
+  background:#fff;border:1px solid #e3e6ea;border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.20);
+  font:13px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;color:#1a1a1a;overflow:hidden;
+  animation:trulens-ov-in .25s ease}
+@keyframes trulens-ov-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.trulens-ov-head{display:flex;align-items:center;gap:8px;padding:9px 12px;
+  background:linear-gradient(135deg,#2f4bff,#3b7dff);color:#fff}
+.trulens-ov-logo{font-size:14px}
+.trulens-ov-title{font-weight:700;font-size:13px}
+.trulens-ov-pill{margin-left:auto;background:rgba(255,255,255,.25);border-radius:999px;
+  padding:1px 9px;font-weight:700;font-size:12px}
+.trulens-ov-toggle{margin-left:auto;background:rgba(255,255,255,.2);border:0;color:#fff;width:22px;height:22px;
+  border-radius:6px;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center}
+.trulens-ov-pill:not([hidden])+.trulens-ov-toggle{margin-left:8px}
+.trulens-overlay[data-collapsed="true"] .trulens-ov-body{display:none}
+.trulens-ov-body{padding:12px}
+.trulens-ov-name{font-weight:600;font-size:12.5px;color:#333;margin-bottom:11px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trulens-ov-gaugewrap{display:flex;align-items:center;gap:13px}
+.trulens-ov-gauge{position:relative;width:62px;height:62px;border-radius:50%;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;background:conic-gradient(#e8eaf0 0deg 360deg)}
+.trulens-ov-gauge::before{content:"";position:absolute;width:46px;height:46px;border-radius:50%;background:#fff}
+.trulens-ov-score{position:relative;font-weight:800;font-size:18px}
+.trulens-ov-meta{flex:1;min-width:0}
+.trulens-ov-verdict{font-weight:700;font-size:13px}
+.trulens-ov-verdict[data-verdict=genuine]{color:#137a3e}
+.trulens-ov-verdict[data-verdict=mixed]{color:#9a6700}
+.trulens-ov-verdict[data-verdict=fake]{color:#b3261e}
+.trulens-ov-count{color:#6b7280;font-size:11.5px;margin-top:3px}
+.trulens-ov-bar{display:flex;height:7px;border-radius:5px;overflow:hidden;background:#eef0f3;margin-top:12px}
+.trulens-ov-bar i{display:block;height:100%;transition:width .4s ease}
+.trulens-ov-bar .g{background:#21a45a}
+.trulens-ov-bar .m{background:#e0a700}
+.trulens-ov-bar .f{background:#d93636}
+.trulens-ov-progress{height:3px;border-radius:3px;background:#eef0f3;margin-top:10px;overflow:hidden}
+.trulens-ov-progress[data-active="false"]{visibility:hidden}
+.trulens-ov-progress span{display:block;height:100%;width:40%;border-radius:3px;
+  background:linear-gradient(90deg,#3b7dff,#21a45a);animation:trulens-ov-slide 1.1s ease-in-out infinite}
+@keyframes trulens-ov-slide{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}

@@ -35,5 +35,6 @@ export const amazonAdapter: SiteAdapter = {
     }
     return out;
   },
-  badgeMount: (anchor) => ({ container: anchor, position: 'afterbegin' })
+  badgeMount: (anchor) => ({ container: anchor, position: 'afterbegin' }),
+  pageName: (root) => root.querySelector('#productTitle')?.textContent?.trim() || null
 };

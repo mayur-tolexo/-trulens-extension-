@@ -30,5 +30,6 @@ export const flipkartAdapter: SiteAdapter = {
     }
     return out;
   },
-  badgeMount: (anchor) => ({ container: anchor, position: 'afterbegin' })
+  badgeMount: (anchor) => ({ container: anchor, position: 'afterbegin' }),
+  pageName: (root) => root.querySelector('.B_NuCI, h1 span')?.textContent?.trim() || null
 };

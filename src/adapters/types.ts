@@ -7,4 +7,6 @@ export interface SiteAdapter {
   matches(url: string): boolean;
   extractReviews(root: ParentNode): ExtractedReview[];
   badgeMount(anchor: Element): { container: Element; position: InsertPosition };
+  /** The product/place name for the current page, if discoverable. */
+  pageName?(root: ParentNode): string | null;
 }

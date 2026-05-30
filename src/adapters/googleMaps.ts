@@ -62,5 +62,6 @@ export const googleMapsAdapter: SiteAdapter = {
     }
     return out;
   },
-  badgeMount: (anchor) => ({ container: anchor, position: 'afterbegin' })
+  badgeMount: (anchor) => ({ container: anchor, position: 'afterbegin' }),
+  pageName: (root) => root.querySelector('h1.DUwDvf, [role="main"] h1')?.textContent?.trim() || null
 };
