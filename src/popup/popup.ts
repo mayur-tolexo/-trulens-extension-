@@ -13,11 +13,17 @@ function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
   );
 }
 
-function getSummary(tabId: number): Promise<{ ok: boolean; summary?: ProductSummary }> {
+interface SummaryResp {
+  ok: boolean;
+  summary?: ProductSummary;
+  debug?: { adapter: string | null; scored: number; probe: Record<string, number> };
+}
+
+function getSummary(tabId: number): Promise<SummaryResp> {
   return new Promise((res) => {
     chrome.tabs.sendMessage(tabId, { type: 'getPageSummary' }, (r) => {
       if (chrome.runtime.lastError || !r) return res({ ok: false });
-      res(r);
+      res(r as SummaryResp);
     });
   });
 }
@@ -46,11 +52,15 @@ function gaugeGradient(score: number, verdict: string): string {
 
 // ── Render summary ────────────────────────────────────────────────────────────
 
-function showEmpty() {
+function showEmpty(msg?: string) {
   const empty = document.getElementById('summary-empty')!;
   const content = document.getElementById('summary-content')!;
   empty.style.display = '';
   content.style.display = 'none';
+  if (msg) {
+    const textEl = empty.querySelector('.tl-empty-text');
+    if (textEl) textEl.textContent = msg;
+  }
 }
 
 function renderSummary(summary: ProductSummary) {
@@ -177,8 +187,18 @@ async function loadSummary() {
   if (!tab?.id) { showEmpty(); return; }
 
   const result = await getSummary(tab.id);
-  if (!result.ok || !result.summary || result.summary.reviewCount === 0) {
-    showEmpty();
+  if (!result.ok) {
+    showEmpty('TruLens isn’t running on this tab yet — reload the page (Cmd+Shift+R), then reopen this popup.');
+    return;
+  }
+  if (!result.summary || result.summary.reviewCount === 0) {
+    const d = result.debug;
+    if (d?.adapter) {
+      const probe = Object.entries(d.probe ?? {}).map(([k, v]) => `${k}:${v}`).join('  ·  ');
+      showEmpty(`Found 0 reviews on “${d.adapter}”. Scroll through the reviews. If it persists, screenshot this → DOM probe: ${probe}`);
+    } else {
+      showEmpty();
+    }
     return;
   }
   renderSummary(result.summary);

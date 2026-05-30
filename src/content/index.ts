@@ -11,11 +11,17 @@ const log = (...a: unknown[]) => console.log(TAG, ...a);
 
 // Module-level map of review id → ScoreResult, exposed to popup via message
 const pageResults = new Map<string, ScoreResult>();
+let activeAdapterKey: string | null = null;
+let lastProbe: Record<string, number> = {};
 
 // Listen for popup requesting a page summary (registered immediately, always)
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'getPageSummary') {
-    sendResponse({ ok: true, summary: aggregate([...pageResults.values()]) });
+    sendResponse({
+      ok: true,
+      summary: aggregate([...pageResults.values()]),
+      debug: { adapter: activeAdapterKey, scored: pageResults.size, probe: lastProbe }
+    });
     return true; // keep channel open
   }
   // Let background handle its own message types
@@ -23,6 +29,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 });
 
 const adapter = adapterFor(location.href);
+activeAdapterKey = adapter?.key ?? null;
 log('content script loaded on', location.hostname, '→ adapter:', adapter?.key ?? 'NONE (url not matched)');
 
 if (adapter) {
@@ -58,6 +65,18 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
 
   const scan = debounce(() => {
     const found = a.extractReviews(document);
+    if (found.length === 0) {
+      lastProbe = {
+        'data-review-id': document.querySelectorAll('[data-review-id]').length,
+        'data-hook=review': document.querySelectorAll('[data-hook="review"]').length,
+        'jftiEf': document.querySelectorAll('.jftiEf').length,
+        'EPCmJX': document.querySelectorAll('.EPCmJX').length,
+        'role=img/star': document.querySelectorAll('[role="img"][aria-label*="star" i]').length,
+      };
+      log('scan: 0 reviews extracted. DOM probe →', lastProbe);
+    } else {
+      log('scan: scored', found.length, 'reviews on', a.key);
+    }
     const all = found.map(f => f.review);
     for (const f of found) {
       if (scored.has(f.review.id)) continue;
