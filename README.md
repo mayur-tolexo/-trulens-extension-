@@ -25,4 +25,4 @@ See `docs/superpowers/specs/2026-05-30-trulens-design.md`.
    (configure proxy URL or your own API key in the popup first).
 3. Repeat on a Flipkart product and a Google Maps place.
 
-Deep analysis supports three providers (popup → LLM source): a hosted proxy, Anthropic with your own key, or any OpenAI-compatible endpoint (e.g. MiniMax — base URL https://api.minimax.io/v1, model MiniMax-M2).
+Deep analysis supports three providers (popup → LLM source): a hosted proxy, Anthropic-compatible with your own key, or any OpenAI-compatible endpoint. MiniMax works two ways: OpenAI-compatible (base URL `https://api.minimax.io/v1`, model `MiniMax-M2`) OR Anthropic-compatible (`https://api.minimax.io/anthropic`, model `MiniMax-M2.7`) — pick the Anthropic mode if reusing a Claude Code MiniMax token.

@@ -19,11 +19,13 @@ export function buildRequest(review: Review, siblings: Review[], s: Settings): L
     };
   }
   if (s.providerMode === 'anthropic') {
+    const base = (s.baseUrl || 'https://api.anthropic.com').replace(/\/+$/, '');
     return {
-      url: 'https://api.anthropic.com/v1/messages',
+      url: `${base}/v1/messages`,
       headers: {
         'content-type': 'application/json',
         'x-api-key': s.apiKey,
+        'authorization': `Bearer ${s.apiKey}`,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },

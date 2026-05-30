@@ -29,6 +29,21 @@ describe('buildRequest', () => {
     const r = buildRequest(review, [], s({ providerMode: 'proxy', proxyUrl: 'https://proxy.test/analyze' }));
     expect(r.url).toBe('https://proxy.test/analyze');
   });
+  it('anthropic: custom baseUrl (MiniMax) builds /v1/messages with Bearer auth', () => {
+    const r = buildRequest(review, [], s({ providerMode: 'anthropic', baseUrl: 'https://api.minimax.io/anthropic', apiKey: 'mk', model: 'MiniMax-M2.7' }));
+    expect(r.url).toBe('https://api.minimax.io/anthropic/v1/messages');
+    expect(r.headers['authorization']).toBe('Bearer mk');
+    expect(JSON.parse(r.body).model).toBe('MiniMax-M2.7');
+  });
+  it('anthropic: empty baseUrl falls back to official Anthropic and sets x-api-key', () => {
+    const r = buildRequest(review, [], s({ providerMode: 'anthropic', apiKey: 'sk' }));
+    expect(r.url).toBe('https://api.anthropic.com/v1/messages');
+    expect(r.headers['x-api-key']).toBe('sk');
+  });
+  it('anthropic: trailing slash on baseUrl is stripped', () => {
+    const r = buildRequest(review, [], s({ providerMode: 'anthropic', baseUrl: 'https://api.minimax.io/anthropic/' }));
+    expect(r.url).toBe('https://api.minimax.io/anthropic/v1/messages');
+  });
 });
 
 describe('extractText', () => {

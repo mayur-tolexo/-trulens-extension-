@@ -38,7 +38,7 @@ export interface Settings {
   perSite: { amazon: boolean; flipkart: boolean; googleMaps: boolean };
   providerMode: ProviderMode;
   apiKey: string;
-  baseUrl: string;   // for openai-compatible, e.g. https://api.minimax.io/v1
+  baseUrl: string;   // API base for 'anthropic' (default https://api.anthropic.com) and 'openai-compatible' modes
   model: string;     // model name
   proxyUrl: string;
 }
@@ -48,7 +48,7 @@ export const DEFAULT_SETTINGS: Settings = {
   perSite: { amazon: true, flipkart: true, googleMaps: true },
   providerMode: 'proxy',
   apiKey: '',
-  baseUrl: 'https://api.minimax.io/v1',
+  baseUrl: '',
   model: 'claude-sonnet-4-6',
   proxyUrl: 'https://trulens-proxy.example.workers.dev/analyze'
 };

@@ -34,7 +34,7 @@ trust score plus settings.
 |---|---|
 | Scoring engine | **Hybrid**: local heuristics (instant baseline) + opt-in LLM deep analysis |
 | Scoring unit | **Both**: per-review inline badges + product-level summary in popup |
-| LLM access | **Configurable**: hosted proxy by default, Anthropic with user's own key, or any OpenAI-compatible endpoint (e.g. MiniMax — base URL `https://api.minimax.io/v1`, model `MiniMax-M2`) |
+| LLM access | **Configurable**: hosted proxy by default, Anthropic-compatible with user's own key (accepts custom base URL, e.g. MiniMax `https://api.minimax.io/anthropic`, model `MiniMax-M2.7`), or any OpenAI-compatible endpoint (e.g. MiniMax — base URL `https://api.minimax.io/v1`, model `MiniMax-M2`) |
 | MVP sites | **All three**: Amazon, Flipkart, Google Maps |
 | Score display | **Shield + label** (traffic-light). Green "Likely genuine" / amber "Mixed signals" / red "Likely fake". 0–100 score shown in detail view. |
 | Code architecture | **Layered**: thin per-site adapters + shared pure `scoring-core` + shared UI layer + service worker for network/settings/cache |
@@ -160,7 +160,7 @@ all persistence in `chrome.storage`.
 - Caches LLM results keyed by a hash of review text (with TTL) in
   `chrome.storage.local`.
 - Owns settings: provider mode (proxy | anthropic | openai-compatible), API key, base URL, model, per-site enable flags,
-  global on/off. `openai-compatible` mode allows any OpenAI-style endpoint (e.g. MiniMax, OpenAI, OpenRouter, local models).
+  global on/off. `anthropic` mode accepts a custom base URL (default `https://api.anthropic.com`; also works with MiniMax `https://api.minimax.io/anthropic`). `openai-compatible` mode allows any OpenAI-style endpoint (e.g. MiniMax, OpenAI, OpenRouter, local models).
 
 ### 6. Hosted proxy (`proxy/`, thin serverless function)
 
