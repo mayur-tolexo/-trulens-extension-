@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  body{font:13px system-ui,sans-serif;width:260px;margin:0;padding:14px;color:#1a1a1a}
+  h1{font-size:15px;margin:0 0 10px}
+  label{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+  input[type=text],select{width:140px}
+  .row{margin-top:8px}
+</style></head>
+<body>
+  <h1>TruLens</h1>
+  <label>Enabled <input type="checkbox" id="enabled"></label>
+  <label>Amazon <input type="checkbox" id="amazon"></label>
+  <label>Flipkart <input type="checkbox" id="flipkart"></label>
+  <label>Google Maps <input type="checkbox" id="googleMaps"></label>
+  <div class="row">
+    <label>LLM source
+      <select id="providerMode">
+        <option value="proxy">Hosted proxy</option>
+        <option value="own-key">My API key</option>
+      </select>
+    </label>
+    <label>API key <input type="text" id="apiKey" placeholder="sk-ant-…"></label>
+  </div>
+  <script type="module" src="./popup.ts"></script>
+</body></html>
