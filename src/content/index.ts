@@ -7,16 +7,20 @@ import type { ExtractedReview } from '../adapters/types';
 import type { Review } from '../types';
 
 const adapter = adapterFor(location.href);
-if (adapter) init(adapter);
+if (adapter) {
+  chrome.runtime.sendMessage({ type: 'getSettings' }, (resp) => {
+    if (!resp?.ok) return;
+    const s = resp.settings;
+    if (s.enabled && s.perSite[adapter.key]) init(adapter);
+  });
+}
 
 function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
   const scored = new Set<string>();
-  const reviewById = new Map<string, Review>();
 
   const scan = debounce(() => {
     const found = a.extractReviews(document);
     const all = found.map(f => f.review);
-    for (const r of all) reviewById.set(r.id, r);
     for (const f of found) {
       if (scored.has(f.review.id)) continue;
       scored.add(f.review.id);

@@ -6,7 +6,8 @@ export async function getSettings(): Promise<Settings> {
 }
 
 export async function setSettings(patch: Partial<Settings>): Promise<Settings> {
-  const next = { ...(await getSettings()), ...patch };
+  const current = await getSettings();
+  const next = { ...current, ...patch, perSite: { ...current.perSite, ...(patch.perSite ?? {}) } };
   await chrome.storage.local.set({ settings: next });
   return next;
 }

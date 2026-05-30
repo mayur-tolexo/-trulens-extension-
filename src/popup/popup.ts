@@ -5,7 +5,9 @@ function send<T = any>(msg: any): Promise<T> {
 }
 
 async function load() {
-  const { settings } = await send<{ settings: Settings }>({ type: 'getSettings' });
+  const resp = await send<{ ok: boolean; settings: Settings }>({ type: 'getSettings' });
+  if (!resp?.ok) throw new Error('Settings unavailable');
+  const settings = resp.settings;
   (document.getElementById('enabled') as HTMLInputElement).checked = settings.enabled;
   (document.getElementById('amazon') as HTMLInputElement).checked = settings.perSite.amazon;
   (document.getElementById('flipkart') as HTMLInputElement).checked = settings.perSite.flipkart;
@@ -30,4 +32,4 @@ function wire() {
   document.querySelectorAll('input,select').forEach(el => el.addEventListener('change', save));
 }
 
-load().then(wire);
+load().then(wire).catch(() => { document.body.insertAdjacentHTML('beforeend', '<p style="color:#b3261e">Settings unavailable — reopen the popup.</p>'); });
