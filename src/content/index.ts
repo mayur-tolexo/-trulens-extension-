@@ -6,19 +6,13 @@ import { renderDetailCard, showDeepResult, applyDeepResult } from '../ui/detailC
 import type { ExtractedReview } from '../adapters/types';
 import type { Review, ScoreResult } from '../types';
 
-const adapter = adapterFor(location.href);
-if (adapter) {
-  chrome.runtime.sendMessage({ type: 'getSettings' }, (resp) => {
-    if (!resp?.ok) return;
-    const s = resp.settings;
-    if (s.enabled && s.perSite[adapter.key]) init(adapter);
-  });
-}
+const TAG = '[TruLens]';
+const log = (...a: unknown[]) => console.log(TAG, ...a);
 
 // Module-level map of review id → ScoreResult, exposed to popup via message
 const pageResults = new Map<string, ScoreResult>();
 
-// Listen for popup requesting a page summary
+// Listen for popup requesting a page summary (registered immediately, always)
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'getPageSummary') {
     sendResponse({ ok: true, summary: aggregate([...pageResults.values()]) });
@@ -27,6 +21,37 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   // Let background handle its own message types
   return undefined;
 });
+
+const adapter = adapterFor(location.href);
+log('content script loaded on', location.hostname, '→ adapter:', adapter?.key ?? 'NONE (url not matched)');
+
+if (adapter) {
+  // Fail-OPEN: try to read settings, but if messaging fails (cold/invalidated
+  // worker), default to enabled and scan anyway — local badges need no network.
+  try {
+    chrome.runtime.sendMessage({ type: 'getSettings' }, (resp) => {
+      const err = chrome.runtime.lastError;
+      if (err) {
+        log('getSettings failed (', err.message, ') — defaulting to enabled');
+        init(adapter);
+        return;
+      }
+      if (resp?.ok) {
+        const s = resp.settings;
+        const on = s.enabled && s.perSite[adapter.key];
+        log('settings: enabled =', s.enabled, '| site', adapter.key, '=', s.perSite[adapter.key]);
+        if (on) init(adapter);
+        else log('disabled by settings — not scanning');
+      } else {
+        log('getSettings returned not-ok — defaulting to enabled');
+        init(adapter);
+      }
+    });
+  } catch (e) {
+    log('sendMessage threw (context invalidated?) — scanning anyway:', (e as Error).message);
+    init(adapter);
+  }
+}
 
 function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
   const scored = new Set<string>();

@@ -15,7 +15,7 @@ export function buildRequest(review: Review, siblings: Review[], s: Settings): L
     return {
       url: `${base}/chat/completions`,
       headers: { 'content-type': 'application/json', 'authorization': `Bearer ${s.apiKey}` },
-      body: JSON.stringify({ model, max_tokens: 200, messages: [{ role: 'user', content }] })
+      body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: 'user', content }] })
     };
   }
   if (s.providerMode === 'anthropic') {
@@ -29,20 +29,36 @@ export function buildRequest(review: Review, siblings: Review[], s: Settings): L
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
-      body: JSON.stringify({ model, max_tokens: 200, messages: [{ role: 'user', content }] })
+      body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: 'user', content }] })
     };
   }
   // proxy (default): proxy forwards an Anthropic-style body server-side
   return {
     url: s.proxyUrl,
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ model, max_tokens: 200, messages: [{ role: 'user', content }] })
+    body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: 'user', content }] })
   };
 }
 
+/** Remove <think>…</think> reasoning blocks emitted by reasoning models (e.g. MiniMax-M2). */
+function stripThink(s: string): string {
+  return s.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+
 export function extractText(mode: ProviderMode, json: any): string {
-  if (mode === 'openai-compatible') return json?.choices?.[0]?.message?.content ?? '';
-  return json?.content?.[0]?.text ?? '';
+  if (mode === 'openai-compatible') {
+    return stripThink(json?.choices?.[0]?.message?.content ?? '');
+  }
+  // anthropic / proxy: reasoning models put a 'thinking' block first, then a 'text'
+  // block — pick the text block, not content[0].
+  const blocks = json?.content;
+  if (Array.isArray(blocks)) {
+    const textBlock = blocks.find((b: any) => b?.type === 'text' && typeof b?.text === 'string');
+    if (textBlock) return stripThink(textBlock.text);
+    const anyText = blocks.find((b: any) => typeof b?.text === 'string');
+    if (anyText) return stripThink(anyText.text);
+  }
+  return '';
 }
 
 export function parseResult(raw: string): DeepAnalysisResult {
@@ -60,4 +76,36 @@ export async function runDeepAnalysis(review: Review, siblings: Review[]): Promi
   if (!res.ok) throw new Error(`LLM ${res.status}`);
   const json = await res.json();
   return parseResult(extractText(s.providerMode, json));
+}
+
+const SAMPLE_REVIEW: Review = {
+  id: 'tl-test',
+  text: 'Battery lasts all day and the camera is sharp in low light. Three weeks of daily use, no issues.',
+  rating: 5, author: 'Test User', verifiedPurchase: true, date: null,
+  reviewerReviewCount: 8, isLocalGuide: null, helpfulCount: 3
+};
+
+export interface TestResult { ok: boolean; score?: number; reasoning?: string; status?: number; error?: string; }
+
+/** Run a single sample request with the current settings to confirm the provider/key/model work. */
+export async function testConnection(): Promise<TestResult> {
+  const s = await getSettings();
+  if (s.providerMode !== 'proxy' && !s.apiKey) return { ok: false, error: 'No API key set.' };
+  if (s.providerMode === 'openai-compatible' && !s.baseUrl) return { ok: false, error: 'Base URL is required for OpenAI-compatible mode.' };
+  const req = buildRequest(SAMPLE_REVIEW, [], s);
+  let res: Response;
+  try {
+    res = await fetch(req.url, { method: 'POST', headers: req.headers, body: req.body });
+  } catch (e) {
+    return { ok: false, error: `Network/CORS error: ${(e as Error).message}` };
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    return { ok: false, status: res.status, error: `HTTP ${res.status} — ${body.slice(0, 160)}` };
+  }
+  const json = await res.json().catch(() => null);
+  const text = extractText(s.providerMode, json);
+  if (!text) return { ok: false, error: 'Model returned an empty response (check the model name).' };
+  const parsed = parseResult(text);
+  return { ok: true, score: parsed.score, reasoning: parsed.reasoning };
 }

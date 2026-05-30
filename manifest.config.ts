@@ -9,7 +9,11 @@ export default defineManifest({
   permissions: ['storage'],
   host_permissions: [
     'https://*.amazon.com/*', 'https://*.amazon.in/*',
-    'https://*.flipkart.com/*', 'https://www.google.com/maps/*'
+    'https://*.flipkart.com/*', 'https://www.google.com/maps/*',
+    // LLM endpoints — needed so the service worker fetch bypasses CORS
+    'https://api.minimax.io/*', 'https://api.minimaxi.com/*',
+    'https://api.anthropic.com/*', 'https://api.openai.com/*',
+    'https://openrouter.ai/*'
   ],
   content_scripts: [{
     matches: [

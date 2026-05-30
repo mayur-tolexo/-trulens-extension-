@@ -54,6 +54,19 @@ describe('extractText', () => {
     expect(extractText('anthropic', { content: [{ text: 'hi' }] })).toBe('hi');
     expect(extractText('proxy', { content: [{ text: 'hi' }] })).toBe('hi');
   });
+  it('strips <think> blocks from OpenAI reasoning-model content', () => {
+    const out = extractText('openai-compatible', { choices: [{ message: { content: '<think>let me think</think>\n```json\n{"score":80}\n```' } }] });
+    expect(out).not.toContain('<think>');
+    expect(out).toContain('"score":80');
+    expect(extractText('openai-compatible', { choices: [{ message: { content: '<think>x</think> pong' } }] })).toBe('pong');
+  });
+  it('picks the text block from Anthropic content when a thinking block comes first', () => {
+    const json = { content: [{ type: 'thinking', thinking: '...' }, { type: 'text', text: '{"score":80}' }] };
+    expect(extractText('anthropic', json)).toBe('{"score":80}');
+  });
+  it('returns empty string when no usable content block exists', () => {
+    expect(extractText('anthropic', { content: [{ type: 'thinking', thinking: '...' }] })).toBe('');
+  });
 });
 
 describe('parseResult', () => {

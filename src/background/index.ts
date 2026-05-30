@@ -1,4 +1,4 @@
-import { runDeepAnalysis } from './llm';
+import { runDeepAnalysis, testConnection } from './llm';
 import { getCached, setCached } from './cache';
 import { getSettings, setSettings } from './settings';
 
@@ -12,6 +12,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         await setCached(msg.review.text, result);
         return sendResponse({ ok: true, result });
       }
+      if (msg.type === 'testConnection') return sendResponse(await testConnection());
       if (msg.type === 'getSettings') return sendResponse({ ok: true, settings: await getSettings() });
       if (msg.type === 'setSettings') return sendResponse({ ok: true, settings: await setSettings(msg.patch) });
       sendResponse({ ok: false, error: 'unknown message' });

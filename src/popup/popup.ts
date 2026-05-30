@@ -110,25 +110,64 @@ async function loadSettings() {
   (document.getElementById('model')        as HTMLInputElement).value   = s.model;
 }
 
-function wireSettings() {
-  const save = async () => {
-    await send({
-      type: 'setSettings',
-      patch: {
-        enabled: (document.getElementById('enabled')    as HTMLInputElement).checked,
-        perSite: {
-          amazon:     (document.getElementById('amazon')     as HTMLInputElement).checked,
-          flipkart:   (document.getElementById('flipkart')   as HTMLInputElement).checked,
-          googleMaps: (document.getElementById('googleMaps') as HTMLInputElement).checked,
-        },
-        providerMode: (document.getElementById('providerMode') as HTMLSelectElement).value as Settings['providerMode'],
-        apiKey:   (document.getElementById('apiKey')   as HTMLInputElement).value,
-        baseUrl:  (document.getElementById('baseUrl')  as HTMLInputElement).value,
-        model:    (document.getElementById('model')    as HTMLInputElement).value,
+// Picking a provider auto-fills sensible base URL + model so it works out of the box.
+const PRESETS: Record<string, { baseUrl: string; model: string }> = {
+  'openai-compatible': { baseUrl: 'https://api.minimax.io/v1',        model: 'MiniMax-M2' },
+  'anthropic':         { baseUrl: 'https://api.minimax.io/anthropic', model: 'MiniMax-M2.7' },
+  'proxy':             { baseUrl: '',                                 model: 'claude-sonnet-4-6' },
+};
+
+async function saveSettings() {
+  await send({
+    type: 'setSettings',
+    patch: {
+      enabled: (document.getElementById('enabled')    as HTMLInputElement).checked,
+      perSite: {
+        amazon:     (document.getElementById('amazon')     as HTMLInputElement).checked,
+        flipkart:   (document.getElementById('flipkart')   as HTMLInputElement).checked,
+        googleMaps: (document.getElementById('googleMaps') as HTMLInputElement).checked,
       },
-    });
-  };
-  document.querySelectorAll('input, select').forEach((el) => el.addEventListener('change', save));
+      providerMode: (document.getElementById('providerMode') as HTMLSelectElement).value as Settings['providerMode'],
+      apiKey:   (document.getElementById('apiKey')   as HTMLInputElement).value,
+      baseUrl:  (document.getElementById('baseUrl')  as HTMLInputElement).value,
+      model:    (document.getElementById('model')    as HTMLInputElement).value,
+    },
+  });
+}
+
+function wireSettings() {
+  document.querySelectorAll('input, select').forEach((el) => el.addEventListener('change', saveSettings));
+
+  // On provider change, apply the preset base URL + model, then save.
+  const providerSel = document.getElementById('providerMode') as HTMLSelectElement;
+  providerSel.addEventListener('change', () => {
+    const preset = PRESETS[providerSel.value];
+    if (preset) {
+      (document.getElementById('baseUrl') as HTMLInputElement).value = preset.baseUrl;
+      (document.getElementById('model')   as HTMLInputElement).value = preset.model;
+      saveSettings();
+    }
+  });
+}
+
+function wireTest() {
+  const btn = document.getElementById('test-btn') as HTMLButtonElement;
+  const status = document.getElementById('test-status')!;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    status.className = 'tl-test-status tl-testing';
+    status.textContent = 'Testing… (reasoning models take a few seconds)';
+    await saveSettings(); // persist current field values first
+    const r = await send<{ ok: boolean; score?: number; reasoning?: string; error?: string }>({ type: 'testConnection' });
+    if (r?.ok) {
+      status.className = 'tl-test-status tl-ok';
+      status.textContent = `✓ Connected — sample review scored ${r.score}/100.`;
+    } else {
+      status.className = 'tl-test-status tl-fail';
+      status.textContent = `✗ ${r?.error ?? 'Test failed.'}`;
+    }
+    btn.disabled = false;
+  });
 }
 
 // ── Load summary ──────────────────────────────────────────────────────────────
@@ -155,7 +194,7 @@ function showSettingsError() {
 }
 
 loadSettings()
-  .then(wireSettings)
+  .then(() => { wireSettings(); wireTest(); })
   .catch(showSettingsError);
 
 loadSummary();

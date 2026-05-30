@@ -3,6 +3,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TruLens</title>
+  <style>
+    .tl-test-row { display:flex; align-items:center; gap:10px; padding:10px 0 2px; flex-wrap:wrap; }
+    .tl-test-btn { border:0; border-radius:8px; padding:7px 14px; font:600 12px system-ui,sans-serif;
+      color:#fff; background:linear-gradient(135deg,#3b7dff,#2f6bff); cursor:pointer; }
+    .tl-test-btn:disabled { opacity:.6; cursor:default; }
+    .tl-test-status { font:12px system-ui,sans-serif; flex:1 1 100%; line-height:1.4; }
+    .tl-test-status.tl-testing { color:#5d6671; }
+    .tl-test-status.tl-ok { color:#137a3e; }
+    .tl-test-status.tl-fail { color:#b3261e; word-break:break-word; }
+  </style>
 </head>
 <body>
 
@@ -129,6 +139,10 @@
       <div class="tl-setting-row">
         <span class="tl-setting-label">API Key</span>
         <input type="text" id="apiKey" placeholder="sk-ant-…">
+      </div>
+      <div class="tl-test-row">
+        <button type="button" id="test-btn" class="tl-test-btn">Test connection</button>
+        <span id="test-status" class="tl-test-status"></span>
       </div>
     </details>
   </div>
