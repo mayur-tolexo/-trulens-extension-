@@ -1,29 +1,137 @@
 <!doctype html>
-<html><head><meta charset="utf-8">
-<style>
-  body{font:13px system-ui,sans-serif;width:260px;margin:0;padding:14px;color:#1a1a1a}
-  h1{font-size:15px;margin:0 0 10px}
-  label{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
-  input[type=text],select{width:140px}
-  .row{margin-top:8px}
-</style></head>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TruLens</title>
+</head>
 <body>
-  <h1>TruLens</h1>
-  <label>Enabled <input type="checkbox" id="enabled"></label>
-  <label>Amazon <input type="checkbox" id="amazon"></label>
-  <label>Flipkart <input type="checkbox" id="flipkart"></label>
-  <label>Google Maps <input type="checkbox" id="googleMaps"></label>
-  <div class="row">
-    <label>LLM source
-      <select id="providerMode">
-        <option value="proxy">Hosted proxy</option>
-        <option value="anthropic">Anthropic-compatible (Anthropic, MiniMax)</option>
-        <option value="openai-compatible">OpenAI-compatible (MiniMax, OpenAI…)</option>
-      </select>
-    </label>
-    <label>API key <input type="text" id="apiKey" placeholder="sk-ant-…"></label>
-    <label>Base URL <input type="text" id="baseUrl" placeholder="https://api.minimax.io/anthropic  or  https://api.minimax.io/v1"></label>
-    <label>Model <input type="text" id="model" placeholder="MiniMax-M2.7 / claude-sonnet-4-6"></label>
+
+  <!-- Header -->
+  <header class="tl-header">
+    <div class="tl-header-icon">🛡</div>
+    <div class="tl-header-text">
+      <span class="tl-header-name">TruLens</span>
+      <span class="tl-header-tagline">Review genuineness</span>
+    </div>
+  </header>
+
+  <!-- Trust Summary -->
+  <div class="tl-section" id="summary-section">
+    <div class="tl-section-title">Trust Summary</div>
+
+    <!-- Empty state (shown when no summary available) -->
+    <div id="summary-empty" class="tl-empty">
+      <div class="tl-empty-icon">🔍</div>
+      <p class="tl-empty-text">Open a product page on Amazon, Flipkart, or Google Maps and scroll through the reviews — TruLens will score them here.</p>
+    </div>
+
+    <!-- Populated summary (hidden until data arrives) -->
+    <div id="summary-content" style="display:none">
+      <div class="tl-gauge-row">
+        <div class="tl-gauge" id="gauge">
+          <div class="tl-gauge-hole">
+            <span class="tl-gauge-num" id="gauge-num">0</span>
+            <span class="tl-gauge-denom">/100</span>
+          </div>
+        </div>
+        <div class="tl-gauge-meta">
+          <div class="tl-verdict" id="verdict-pill" data-verdict="genuine">
+            <span class="tl-verdict-dot"></span>
+            <span id="verdict-label">Likely genuine</span>
+          </div>
+          <div class="tl-review-count" id="review-count">Based on 0 reviews</div>
+        </div>
+      </div>
+
+      <!-- Stacked breakdown bar -->
+      <div class="tl-breakdown">
+        <div class="tl-bar-track" id="breakdown-bar">
+          <div class="tl-bar-genuine" id="bar-genuine" style="width:0%"></div>
+          <div class="tl-bar-mixed"   id="bar-mixed"   style="width:0%"></div>
+          <div class="tl-bar-fake"    id="bar-fake"    style="width:0%"></div>
+        </div>
+        <div class="tl-legend">
+          <div class="tl-legend-item">
+            <span class="tl-legend-dot tl-legend-dot--genuine"></span>
+            <span id="legend-genuine">0 genuine</span>
+          </div>
+          <div class="tl-legend-item">
+            <span class="tl-legend-dot tl-legend-dot--mixed"></span>
+            <span id="legend-mixed">0 mixed</span>
+          </div>
+          <div class="tl-legend-item">
+            <span class="tl-legend-dot tl-legend-dot--fake"></span>
+            <span id="legend-fake">0 fake</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Settings -->
+  <div class="tl-section">
+    <details>
+      <summary class="tl-settings-toggle">
+        <i class="tl-chevron">▶</i> ⚙ Settings
+      </summary>
+
+      <!-- Main toggle -->
+      <div class="tl-setting-row">
+        <span class="tl-setting-label">Enabled</span>
+        <label class="tl-toggle-wrap">
+          <input type="checkbox" id="enabled">
+          <span class="tl-toggle-track"></span>
+        </label>
+      </div>
+
+      <!-- Per-site -->
+      <div class="tl-subsection-label">Sites</div>
+      <div class="tl-setting-row">
+        <span class="tl-setting-label">Amazon</span>
+        <label class="tl-toggle-wrap">
+          <input type="checkbox" id="amazon">
+          <span class="tl-toggle-track"></span>
+        </label>
+      </div>
+      <div class="tl-setting-row">
+        <span class="tl-setting-label">Flipkart</span>
+        <label class="tl-toggle-wrap">
+          <input type="checkbox" id="flipkart">
+          <span class="tl-toggle-track"></span>
+        </label>
+      </div>
+      <div class="tl-setting-row">
+        <span class="tl-setting-label">Google Maps</span>
+        <label class="tl-toggle-wrap">
+          <input type="checkbox" id="googleMaps">
+          <span class="tl-toggle-track"></span>
+        </label>
+      </div>
+
+      <!-- LLM source -->
+      <div class="tl-subsection-label">LLM Provider</div>
+      <div class="tl-setting-row">
+        <span class="tl-setting-label">Source</span>
+        <select id="providerMode">
+          <option value="proxy">Hosted proxy</option>
+          <option value="anthropic">Anthropic-compatible (Anthropic, MiniMax)</option>
+          <option value="openai-compatible">OpenAI-compatible (MiniMax, OpenAI…)</option>
+        </select>
+      </div>
+      <div class="tl-setting-row">
+        <span class="tl-setting-label">Base URL</span>
+        <input type="text" id="baseUrl" placeholder="https://api.minimax.io/anthropic  or  https://api.minimax.io/v1">
+      </div>
+      <div class="tl-setting-row">
+        <span class="tl-setting-label">Model</span>
+        <input type="text" id="model" placeholder="MiniMax-M2.7 / claude-sonnet-4-6">
+      </div>
+      <div class="tl-setting-row">
+        <span class="tl-setting-label">API Key</span>
+        <input type="text" id="apiKey" placeholder="sk-ant-…">
+      </div>
+    </details>
+  </div>
+
   <script type="module" src="./popup.ts"></script>
 </body></html>
