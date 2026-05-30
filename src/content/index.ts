@@ -28,8 +28,10 @@ let lastProbe: Record<string, number> = {};
 // Listen for popup requesting a page summary (registered immediately, always)
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'getPageSummary') {
+    const name = (adapter && adapter.pageName && adapter.pageName(document)) || cleanTitle();
     sendResponse({
       ok: true,
+      name,
       summary: aggregate([...pageResults.values()]),
       debug: { adapter: activeAdapterKey, scored: pageResults.size, probe: lastProbe }
     });
@@ -81,7 +83,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
   const autoDeep = !!settings && settings.autoDeep !== false && providerReady;
 
   const scored = new Set<string>();
-  let settleTimer: ReturnType<typeof setTimeout> | undefined;
+  let autoLoadStarted = false;
 
   // Track mount points so badges can be re-rendered with AI verdicts
   const mounts = new Map<string, { f: ExtractedReview; container: Element; position: InsertPosition }>();
@@ -153,12 +155,14 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       log('scan: scored', found.length, 'reviews on', a.key);
     }
     const all = found.map(f => f.review);
+    let added = 0;
     for (const f of found) {
       // Always update seen map for sibling context
       seen.set(f.review.id, f.review);
 
       if (scored.has(f.review.id)) continue;
       scored.add(f.review.id);
+      added++;
 
       const result = scoreReview(f.review, all);
       pageResults.set(f.review.id, result);
@@ -172,10 +176,15 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       // Auto-enqueue for AI deep analysis if enabled
       if (autoDeep) enqueueDeep(f.review.id);
     }
-    // Keep the on-page panel live; show the progress bar briefly, then settle.
-    refresh(true);
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => refresh(false), 1500);
+    // Start the one-time auto-loader once reviews actually appear (e.g. after
+    // the user opens the Reviews tab). Runs once, scrolls to the bottom, stops.
+    if (a.key === 'googleMaps' && found.length > 0 && !autoLoadStarted) {
+      autoLoadStarted = true;
+      autoLoad();
+    }
+    // Loader reflects REAL activity (new reviews or analysis in flight) so it
+    // stops after the first load — Google Maps mutates the DOM constantly.
+    refresh(added > 0 || inflight > 0);
   }, 250);
 
   function deepAnalyze(f: ExtractedReview, siblings: Review[]) {
@@ -203,39 +212,45 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       });
   }
 
-  // Auto-load all reviews for Google Maps by scrolling the reviews container
+  // Find the scrollable reviews container on Google Maps.
   function findScrollContainer(): HTMLElement | null {
+    const known = document.querySelector('.m6QErb.DxyBCb, .m6QErb[tabindex="-1"]') as HTMLElement | null;
+    if (known && known.scrollHeight > known.clientHeight + 20) return known;
     const anchor = document.querySelector('[data-review-id], .jftiEf');
     let el: HTMLElement | null = anchor?.parentElement as HTMLElement | null;
-    while (el) {
+    while (el && el !== document.body) {
       const oy = getComputedStyle(el).overflowY;
-      if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 40) return el;
+      if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 20) return el;
       el = el.parentElement;
     }
     return null;
   }
 
+  // Scroll the reviews container to the bottom repeatedly until no new reviews
+  // load, then stop. Runs exactly once per place.
   function autoLoad() {
     let lastCount = 0, stable = 0, ticks = 0;
-    const MAX_TICKS = 80;
+    const MAX_TICKS = 100;
     const step = () => {
       const c = findScrollContainer();
       const count = document.querySelectorAll('[data-review-id], .jftiEf').length;
       if (count > lastCount) { lastCount = count; stable = 0; } else { stable++; }
       ticks++;
       scan();                       // score whatever is now loaded
-      if (!c || stable >= 5 || ticks >= MAX_TICKS) { refresh(inflight > 0); return; }
-      c.scrollTop = c.scrollHeight;
-      setTimeout(step, 700);
+      if (!c || stable >= 6 || ticks >= MAX_TICKS) {
+        log('auto-load complete:', count, 'reviews loaded');
+        refresh(inflight > 0);
+        return;
+      }
+      c.scrollTo({ top: c.scrollHeight });
+      c.dispatchEvent(new Event('scroll', { bubbles: true }));
+      setTimeout(step, 650);
     };
     step();
   }
 
   refresh(true);            // show the panel immediately in its "scanning" state
-  scan();
-  if (a.key === 'googleMaps') {
-    autoLoad();
-  }
+  scan();                   // autoLoad is kicked off from scan() once reviews appear
   new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
 }
 

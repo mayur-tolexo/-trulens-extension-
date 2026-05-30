@@ -32,6 +32,7 @@ function build(): HTMLElement {
         <div class="trulens-ov-gauge"><span class="trulens-ov-score">–</span></div>
         <div class="trulens-ov-meta">
           <div class="trulens-ov-verdict" data-verdict="mixed">Scanning…</div>
+          <div class="trulens-ov-stars" style="display:none"></div>
           <div class="trulens-ov-count">0 reviews scored</div>
         </div>
       </div>
@@ -87,6 +88,16 @@ export function updateOverlay(name: string | null, summary: ProductSummary, scan
   const verdictEl = q('.trulens-ov-verdict');
   verdictEl.setAttribute('data-verdict', has ? v : 'mixed');
   verdictEl.textContent = has ? LABEL[v] : (scanning ? 'Scanning…' : 'No reviews yet');
+
+  const starsEl = q('.trulens-ov-stars');
+  if (has) {
+    const stars = Math.round(summary.score / 20 * 10) / 10; // 0–100 → 0–5, 1 decimal
+    const full = Math.round(stars);
+    starsEl.textContent = `${'★'.repeat(full)}${'☆'.repeat(5 - full)}  ${stars.toFixed(1)}/5`;
+    starsEl.style.display = '';
+  } else {
+    starsEl.style.display = 'none';
+  }
 
   const countBase = scanning && !has
     ? 'Looking for reviews…'

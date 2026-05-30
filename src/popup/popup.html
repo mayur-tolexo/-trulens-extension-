@@ -12,6 +12,9 @@
     .tl-test-status.tl-testing { color:#5d6671; }
     .tl-test-status.tl-ok { color:#137a3e; }
     .tl-test-status.tl-fail { color:#b3261e; word-break:break-word; }
+    .tl-place-name { font-weight:700; font-size:14px; color:#1a1a1a; margin-bottom:10px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tl-stars { color:#f5a623; font-weight:700; font-size:13px; letter-spacing:1px; margin-top:4px; }
   </style>
 </head>
 <body>
@@ -37,6 +40,7 @@
 
     <!-- Populated summary (hidden until data arrives) -->
     <div id="summary-content" style="display:none">
+      <div class="tl-place-name" id="place-name" style="display:none"></div>
       <div class="tl-gauge-row">
         <div class="tl-gauge" id="gauge">
           <div class="tl-gauge-hole">
@@ -49,6 +53,7 @@
             <span class="tl-verdict-dot"></span>
             <span id="verdict-label">Likely genuine</span>
           </div>
+          <div class="tl-stars" id="stars"></div>
           <div class="tl-review-count" id="review-count">Based on 0 reviews</div>
         </div>
       </div>

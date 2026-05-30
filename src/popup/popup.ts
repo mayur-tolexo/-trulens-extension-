@@ -15,6 +15,7 @@ function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
 
 interface SummaryResp {
   ok: boolean;
+  name?: string | null;
   summary?: ProductSummary;
   debug?: { adapter: string | null; scored: number; probe: Record<string, number> };
 }
@@ -63,11 +64,16 @@ function showEmpty(msg?: string) {
   }
 }
 
-function renderSummary(summary: ProductSummary) {
+function renderSummary(summary: ProductSummary, name?: string | null) {
   const empty = document.getElementById('summary-empty')!;
   const content = document.getElementById('summary-content')!;
   empty.style.display = 'none';
   content.style.display = '';
+
+  // Product / place name
+  const nameEl = document.getElementById('place-name')!;
+  if (name) { nameEl.textContent = name; nameEl.style.display = ''; }
+  else { nameEl.style.display = 'none'; }
 
   // Gauge
   const gauge = document.getElementById('gauge')!;
@@ -75,6 +81,12 @@ function renderSummary(summary: ProductSummary) {
 
   const gaugeNum = document.getElementById('gauge-num')!;
   gaugeNum.textContent = String(summary.score);
+
+  // 5-star rating from our analysis (0–100 → 0–5)
+  const stars = Math.round(summary.score / 20 * 10) / 10;
+  const full = Math.round(stars);
+  (document.getElementById('stars')!).textContent =
+    `${'★'.repeat(full)}${'☆'.repeat(5 - full)}  ${stars.toFixed(1)}/5`;
 
   // Verdict pill
   const verdictPill = document.getElementById('verdict-pill')!;
@@ -203,7 +215,7 @@ async function loadSummary() {
     }
     return;
   }
-  renderSummary(result.summary);
+  renderSummary(result.summary, result.name);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
