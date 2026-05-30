@@ -1,18 +1,317 @@
-.trulens-badge{display:inline-flex;align-items:center;gap:6px;font:600 12px/1.2 system-ui,sans-serif;
-  padding:3px 9px;border-radius:999px;cursor:pointer;vertical-align:middle;margin:2px 0;border:1px solid}
-.trulens-badge .trulens-shield{width:16px;height:16px;border-radius:5px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px}
-.trulens-badge[data-verdict=genuine]{background:#e6f7ec;color:#137a3e;border-color:#a7e0bd}
-.trulens-badge[data-verdict=genuine] .trulens-shield{background:#21a45a}
-.trulens-badge[data-verdict=mixed]{background:#fff6e6;color:#9a6700;border-color:#f3dca2}
-.trulens-badge[data-verdict=mixed] .trulens-shield{background:#e0a700}
-.trulens-badge[data-verdict=fake]{background:#fdecef;color:#b3261e;border-color:#f6c2cd}
-.trulens-badge[data-verdict=fake] .trulens-shield{background:#d93636}
-.trulens-card{background:#fff;border:1px solid #e3e6ea;border-radius:10px;padding:12px;width:260px;
-  box-shadow:0 6px 24px rgba(0,0,0,.15);font:13px system-ui,sans-serif;color:#1a1a1a}
-.trulens-card-score{font-size:26px;font-weight:800}
-.trulens-card-score small{font-size:13px;color:#888;font-weight:600}
-.trulens-signals{list-style:none;margin:8px 0;padding:0;max-height:160px;overflow:auto}
-.trulens-signals li{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #f1f3f5}
-.trulens-signals li.pos b{color:#137a3e}.trulens-signals li.neg b{color:#b3261e}
-.trulens-deep{margin-top:6px;width:100%;padding:7px;border:0;border-radius:7px;background:#3b7dff;color:#fff;font-weight:600;cursor:pointer}
-.trulens-deep-result{margin-top:8px;font-size:12px;color:#333;line-height:1.4}
+/* ── Badge entrance keyframes ── */
+@keyframes trulens-badge-in {
+  from { opacity: 0; transform: scale(0.82); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Card entrance keyframes ── */
+@keyframes trulens-card-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Spinner ── */
+@keyframes trulens-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════
+   BADGE
+═══════════════════════════════════════════ */
+.trulens-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 600 12px/1.2 system-ui, -apple-system, sans-serif;
+  padding: 3px 8px 3px 4px;
+  border-radius: 999px;
+  cursor: pointer;
+  vertical-align: middle;
+  margin: 2px 0;
+  border: 1px solid transparent;
+  outline: none;
+  /* Start invisible; animation class makes it visible */
+  opacity: 0;
+  transform: scale(0.82);
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+}
+.trulens-badge--visible {
+  animation: trulens-badge-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.trulens-badge:focus-visible {
+  box-shadow: 0 0 0 3px rgba(59, 125, 255, 0.45);
+}
+.trulens-badge:hover {
+  transform: scale(1.04);
+}
+
+.trulens-shield {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.trulens-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.trulens-score {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 999px;
+  opacity: 0.75;
+  background: rgba(0,0,0,0.08);
+}
+
+/* Per-verdict colors */
+.trulens-badge[data-verdict=genuine] { background: #e6f7ec; color: #137a3e; border-color: #a7e0bd; }
+.trulens-badge[data-verdict=genuine] .trulens-shield { background: #21a45a; }
+
+.trulens-badge[data-verdict=mixed] { background: #fff6e6; color: #9a6700; border-color: #f3dca2; }
+.trulens-badge[data-verdict=mixed] .trulens-shield { background: #e0a700; }
+
+.trulens-badge[data-verdict=fake] { background: #fdecef; color: #b3261e; border-color: #f6c2cd; }
+.trulens-badge[data-verdict=fake] .trulens-shield { background: #d93636; }
+
+/* ═══════════════════════════════════════════
+   DETAIL CARD
+═══════════════════════════════════════════ */
+.trulens-card {
+  all: initial;
+  box-sizing: border-box;
+  display: block;
+  background: #ffffff;
+  border: 1px solid #e3e6ea;
+  border-radius: 14px;
+  width: 272px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #1a1a1a;
+  color-scheme: light;
+  /* Start hidden; animation class reveals */
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+}
+.trulens-card--visible {
+  animation: trulens-card-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Pointer triangle */
+.trulens-card::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 18px;
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border-left: 1px solid #e3e6ea;
+  border-top: 1px solid #e3e6ea;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.trulens-card-inner {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Score gauge ── */
+.trulens-gauge-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.trulens-gauge {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* conic-gradient set inline per verdict/score */
+}
+
+.trulens-gauge-hole {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.trulens-gauge-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+.trulens-gauge-denom {
+  font-size: 10px;
+  color: #888;
+  font-weight: 600;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* ── Verdict heading ── */
+.trulens-verdict-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 4px 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.trulens-verdict-heading[data-verdict=genuine] { background: #e6f7ec; color: #137a3e; }
+.trulens-verdict-heading[data-verdict=mixed]   { background: #fff6e6; color: #9a6700; }
+.trulens-verdict-heading[data-verdict=fake]    { background: #fdecef; color: #b3261e; }
+
+.trulens-verdict-icon {
+  font-size: 14px;
+  font-weight: 800;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.trulens-verdict-heading[data-verdict=genuine] .trulens-verdict-icon { background: #21a45a; }
+.trulens-verdict-heading[data-verdict=mixed]   .trulens-verdict-icon { background: #e0a700; }
+.trulens-verdict-heading[data-verdict=fake]    .trulens-verdict-icon { background: #d93636; }
+
+/* ── Signal chips ── */
+.trulens-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+}
+
+.trulens-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1.3;
+}
+
+.trulens-chip strong {
+  font-weight: 700;
+}
+
+.trulens-chip--pos {
+  background: #e6f7ec;
+  color: #137a3e;
+  border-color: #a7e0bd;
+}
+.trulens-chip--pos strong { color: #137a3e; }
+
+.trulens-chip--neg {
+  background: #fdecef;
+  color: #b3261e;
+  border-color: #f6c2cd;
+}
+.trulens-chip--neg strong { color: #b3261e; }
+
+/* ── Deep analysis button ── */
+.trulens-deep-btn {
+  all: initial;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #3b7dff 0%, #5b5cff 100%);
+  color: #fff;
+  font: 600 13px/1 system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  outline: none;
+  letter-spacing: 0.01em;
+}
+.trulens-deep-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+.trulens-deep-btn:active:not(:disabled) { transform: translateY(0); }
+.trulens-deep-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.trulens-deep-btn:focus-visible { box-shadow: 0 0 0 3px rgba(59, 125, 255, 0.45); }
+
+/* ── Spinner ── */
+.trulens-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: trulens-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Deep result area ── */
+.trulens-deep-result {
+  width: 100%;
+  font-size: 12px;
+  color: #333;
+  line-height: 1.5;
+  background: #f8f9fb;
+  border: 1px solid #e3e6ea;
+  border-radius: 8px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.trulens-ai-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #3b7dff 0%, #5b5cff 100%);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.trulens-reasoning {
+  margin: 0;
+  font-size: 12px;
+  color: #333;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
