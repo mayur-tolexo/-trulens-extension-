@@ -3,7 +3,7 @@ import { adapterFor } from '../adapters/registry';
 import { scoreReview, aggregate, verdictFor } from '../scoring-core';
 import { renderBadge } from '../ui/badge';
 import { renderDetailCard, showDeepResult, applyDeepResult } from '../ui/detailCard';
-import { updateOverlay } from '../ui/overlay';
+import { updateOverlay, showOverlay } from '../ui/overlay';
 import type { ExtractedReview } from '../adapters/types';
 import type { Review, ScoreResult, Settings } from '../types';
 
@@ -34,6 +34,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       debug: { adapter: activeAdapterKey, scored: pageResults.size, probe: lastProbe }
     });
     return true; // keep channel open
+  }
+  if (msg?.type === 'showOverlay') {
+    showOverlay();
+    sendResponse({ ok: true });
+    return true;
   }
   // Let background handle its own message types
   return undefined;

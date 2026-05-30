@@ -12,6 +12,7 @@ const COLOR: Record<Verdict, string> = {
 };
 
 let root: HTMLElement | null = null;
+let dismissed = false;
 
 function build(): HTMLElement {
   const el = document.createElement('div');
@@ -23,6 +24,7 @@ function build(): HTMLElement {
       <span class="trulens-ov-title">TruLens</span>
       <span class="trulens-ov-pill" hidden>–</span>
       <button class="trulens-ov-toggle" title="Minimize" aria-label="Minimize">–</button>
+      <button class="trulens-ov-close" title="Close (reopen from the extension icon)" aria-label="Close">×</button>
     </div>
     <div class="trulens-ov-body">
       <div class="trulens-ov-name" style="display:none"></div>
@@ -46,13 +48,26 @@ function build(): HTMLElement {
     pill.hidden = collapsed;
   });
 
+  const close = el.querySelector('.trulens-ov-close') as HTMLButtonElement;
+  close.addEventListener('click', () => {
+    dismissed = true;
+    el.style.display = 'none';
+  });
+
   document.body.appendChild(el);
   return el;
+}
+
+/** Re-show the panel after the user closed it (called when the popup opens). */
+export function showOverlay(): void {
+  dismissed = false;
+  if (root) root.style.display = '';
 }
 
 /** Create/update the on-page floating trust panel. */
 export function updateOverlay(name: string | null, summary: ProductSummary, scanning: boolean, analyzed?: number): void {
   if (!root) root = build();
+  if (dismissed) return; // user closed it; wait for showOverlay() (extension-icon click)
   const q = (s: string) => root!.querySelector(s) as HTMLElement;
 
   const has = summary.reviewCount > 0;

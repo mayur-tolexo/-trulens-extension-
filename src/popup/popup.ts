@@ -220,3 +220,10 @@ loadSettings()
   .catch(showSettingsError);
 
 loadSummary();
+
+// Opening the popup (clicking the extension icon) re-shows the on-page panel
+// if the user had closed it.
+(async () => {
+  const tab = await getActiveTab();
+  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'showOverlay' }, () => void chrome.runtime.lastError);
+})();
