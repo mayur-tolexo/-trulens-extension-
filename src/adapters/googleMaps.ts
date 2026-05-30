@@ -66,5 +66,13 @@ export const googleMapsAdapter: SiteAdapter = {
     return out;
   },
   badgeMount: (anchor) => ({ container: anchor, position: 'afterbegin' }),
-  pageName: (root) => root.querySelector('h1.DUwDvf, [role="main"] h1')?.textContent?.trim() || null
+  pageName: (root) => {
+    // The place-panel title; avoid the search-results "Results" heading.
+    const h = root.querySelector('h1.DUwDvf')?.textContent?.trim();
+    if (h && !/^results$/i.test(h)) return h;
+    // Most reliable: the place name is in the URL path /place/<name>/.
+    const m = location.pathname.match(/\/place\/([^/@]+)/);
+    if (m) { try { return decodeURIComponent(m[1].replace(/\+/g, ' ')).trim() || null; } catch { return m[1].replace(/\+/g, ' '); } }
+    return null;
+  }
 };

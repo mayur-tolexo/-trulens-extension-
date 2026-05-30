@@ -7,6 +7,12 @@ import { updateOverlay, showOverlay } from '../ui/overlay';
 import type { ExtractedReview } from '../adapters/types';
 import type { Review, ScoreResult, Settings } from '../types';
 
+/** Identifies the current place on Google Maps (changes on SPA navigation). */
+function placeKey(): string {
+  const m = location.pathname.match(/\/place\/([^/@]+)/);
+  return m ? m[1] : location.pathname;
+}
+
 /** Best-effort page name: adapter selector first, else cleaned document.title. */
 function cleanTitle(): string | null {
   const t = document.title
@@ -84,6 +90,8 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
 
   const scored = new Set<string>();
   let autoLoadStarted = false;
+  let generation = 0;            // bumped on place change; invalidates in-flight work
+  let lastPlaceKey = placeKey();
 
   // Track mount points so badges can be re-rendered with AI verdicts
   const mounts = new Map<string, { f: ExtractedReview; container: Element; position: InsertPosition }>();
@@ -115,11 +123,13 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
     while (inflight < MAX_INFLIGHT && deepQueue.length) {
       const id = deepQueue.shift()!;
       const m = mounts.get(id); if (!m) continue;
+      const gen = generation;
       inflight++;
       chrome.runtime.sendMessage(
         { type: 'deepAnalysis', review: m.f.review, siblings: siblingsFor(id) },
         (resp) => {
           inflight--;
+          if (gen !== generation) { pumpDeep(); return; } // place changed; drop stale result
           if (resp?.ok) {
             const r = resp.result;
             const verdict = r.verdict ?? verdictFor(r.score);
@@ -140,7 +150,25 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
     queued.add(id); deepQueue.push(id); pumpDeep();
   }
 
+  function resetForNewPlace() {
+    generation++;            // invalidate any in-flight deep-analysis callbacks
+    pageResults.clear();
+    seen.clear();
+    scored.clear();
+    mounts.clear();
+    deepQueue.length = 0;
+    queued.clear();
+    analyzed = 0;
+    autoLoadStarted = false;
+    log('place changed → reset');
+    refresh(true);           // immediately clear the panel to the new-place state
+  }
+
   const scan = debounce(() => {
+    // Google Maps is a SPA: clicking a new place must clear the previous one.
+    const pk = placeKey();
+    if (pk !== lastPlaceKey) { lastPlaceKey = pk; resetForNewPlace(); }
+
     const found = a.extractReviews(document);
     if (found.length === 0) {
       lastProbe = {
