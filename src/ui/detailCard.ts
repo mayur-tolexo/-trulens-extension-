@@ -1,5 +1,9 @@
 import type { ScoreResult } from '../types';
 
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 export function renderDetailCard(
   anchor: Element,
   result: ScoreResult,
@@ -10,7 +14,7 @@ export function renderDetailCard(
   card.className = 'trulens-card';
   card.setAttribute('data-verdict', result.verdict);
   const signals = result.signals
-    .map(s => `<li class="${s.delta >= 0 ? 'pos' : 'neg'}">${s.label} <b>${s.delta >= 0 ? '+' : ''}${s.delta}</b></li>`)
+    .map(s => `<li class="${s.delta >= 0 ? 'pos' : 'neg'}">${esc(s.label)} <b>${s.delta >= 0 ? '+' : ''}${s.delta}</b></li>`)
     .join('');
   card.innerHTML = `
     <div class="trulens-card-score">${result.score}<small>/100</small></div>

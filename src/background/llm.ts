@@ -40,7 +40,10 @@ export async function runDeepAnalysis(review: Review, siblings: Review[]): Promi
   }
 
   const m = raw.match(/\{[\s\S]*\}/);
-  const parsed = m ? JSON.parse(m[0]) : { score: 50, reasoning: 'Could not parse response.' };
+  let parsed: { score?: unknown; reasoning?: unknown } = { score: 50, reasoning: 'Could not parse response.' };
+  if (m) {
+    try { parsed = JSON.parse(m[0]); } catch { /* keep fallback */ }
+  }
   const score = Math.max(0, Math.min(100, Number(parsed.score) || 50));
   return { score, verdict: verdictFor(score), reasoning: String(parsed.reasoning ?? '') };
 }
