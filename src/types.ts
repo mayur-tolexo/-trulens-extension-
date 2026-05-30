@@ -10,6 +10,7 @@ export interface Review {
   reviewerReviewCount: number | null;
   isLocalGuide: boolean | null;
   helpfulCount: number | null;
+  reviewerPhotoCount?: number | null;
 }
 
 export interface Signal {
@@ -41,6 +42,7 @@ export interface Settings {
   baseUrl: string;   // API base for 'anthropic' (default https://api.anthropic.com) and 'openai-compatible' modes
   model: string;     // model name
   proxyUrl: string;
+  autoDeep: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -50,7 +52,8 @@ export const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   baseUrl: '',
   model: 'claude-sonnet-4-6',
-  proxyUrl: 'https://trulens-proxy.example.workers.dev/analyze'
+  proxyUrl: 'https://trulens-proxy.example.workers.dev/analyze',
+  autoDeep: true
 };
 
 export interface DeepAnalysisResult {

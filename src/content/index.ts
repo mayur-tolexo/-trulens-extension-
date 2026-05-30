@@ -5,7 +5,7 @@ import { renderBadge } from '../ui/badge';
 import { renderDetailCard, showDeepResult, applyDeepResult } from '../ui/detailCard';
 import { updateOverlay } from '../ui/overlay';
 import type { ExtractedReview } from '../adapters/types';
-import type { Review, ScoreResult } from '../types';
+import type { Review, ScoreResult, Settings } from '../types';
 
 /** Best-effort page name: adapter selector first, else cleaned document.title. */
 function cleanTitle(): string | null {
@@ -51,34 +51,87 @@ if (adapter) {
       const err = chrome.runtime.lastError;
       if (err) {
         log('getSettings failed (', err.message, ') — defaulting to enabled');
-        init(adapter);
+        init(adapter, undefined);
         return;
       }
       if (resp?.ok) {
         const s = resp.settings;
         const on = s.enabled && s.perSite[adapter.key];
         log('settings: enabled =', s.enabled, '| site', adapter.key, '=', s.perSite[adapter.key]);
-        if (on) init(adapter);
+        if (on) init(adapter, resp.settings);
         else log('disabled by settings — not scanning');
       } else {
         log('getSettings returned not-ok — defaulting to enabled');
-        init(adapter);
+        init(adapter, undefined);
       }
     });
   } catch (e) {
     log('sendMessage threw (context invalidated?) — scanning anyway:', (e as Error).message);
-    init(adapter);
+    init(adapter, undefined);
   }
 }
 
-function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
+function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings) {
+  const providerReady = !!settings && (settings.providerMode === 'proxy' || !!settings.apiKey);
+  const autoDeep = !!settings && settings.autoDeep !== false && providerReady;
+
   const scored = new Set<string>();
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
 
+  // Track mount points so badges can be re-rendered with AI verdicts
+  const mounts = new Map<string, { f: ExtractedReview; container: Element; position: InsertPosition }>();
+  // All reviews seen, keyed by id, for sibling context
+  const seen = new Map<string, Review>();
+
+  // Auto-deep queue state
+  const deepQueue: string[] = [];
+  const queued = new Set<string>();
+  let inflight = 0, analyzed = 0;
+  const MAX_INFLIGHT = 3;
+
   const refresh = (scanning: boolean) => {
     const name = (a.pageName && a.pageName(document)) || cleanTitle();
-    updateOverlay(name, aggregate([...pageResults.values()]), scanning);
+    updateOverlay(name, aggregate([...pageResults.values()]), scanning, analyzed);
   };
+
+  function siblingsFor(id: string): Review[] {
+    return [...seen.values()].filter(r => r.id !== id).slice(0, 6);
+  }
+
+  function renderFor(id: string, result: ScoreResult) {
+    const m = mounts.get(id); if (!m) return;
+    renderBadge(m.container, m.position, result, () =>
+      renderDetailCard(m.f.anchor, result, () => deepAnalyze(m.f, siblingsFor(id))));
+  }
+
+  function pumpDeep() {
+    while (inflight < MAX_INFLIGHT && deepQueue.length) {
+      const id = deepQueue.shift()!;
+      const m = mounts.get(id); if (!m) continue;
+      inflight++;
+      chrome.runtime.sendMessage(
+        { type: 'deepAnalysis', review: m.f.review, siblings: siblingsFor(id) },
+        (resp) => {
+          inflight--;
+          if (resp?.ok) {
+            const r = resp.result;
+            const verdict = r.verdict ?? verdictFor(r.score);
+            const prev = pageResults.get(id) ?? scoreReview(m.f.review, []);
+            const updated: ScoreResult = { ...prev, score: r.score, verdict };
+            pageResults.set(id, updated);
+            renderFor(id, updated);    // upgrade the inline badge to the AI verdict
+            analyzed++;
+          }
+          refresh(inflight > 0);
+          pumpDeep();
+        });
+    }
+  }
+
+  function enqueueDeep(id: string) {
+    if (queued.has(id)) return;
+    queued.add(id); deepQueue.push(id); pumpDeep();
+  }
 
   const scan = debounce(() => {
     const found = a.extractReviews(document);
@@ -96,13 +149,23 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
     }
     const all = found.map(f => f.review);
     for (const f of found) {
+      // Always update seen map for sibling context
+      seen.set(f.review.id, f.review);
+
       if (scored.has(f.review.id)) continue;
       scored.add(f.review.id);
+
       const result = scoreReview(f.review, all);
       pageResults.set(f.review.id, result);
+
       const mount = a.badgeMount(f.anchor);
-      renderBadge(mount.container, mount.position, result, () =>
-        renderDetailCard(f.anchor, result, () => deepAnalyze(f, all)));
+      // Store mount point for later re-renders
+      mounts.set(f.review.id, { f, container: mount.container, position: mount.position });
+
+      renderFor(f.review.id, result);
+
+      // Auto-enqueue for AI deep analysis if enabled
+      if (autoDeep) enqueueDeep(f.review.id);
     }
     // Keep the on-page panel live; show the progress bar briefly, then settle.
     refresh(true);
@@ -126,6 +189,8 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
             verdict
           };
           pageResults.set(f.review.id, updated);
+          // Also upgrade the inline badge
+          renderFor(f.review.id, updated);
           refresh(false);
         } else {
           showDeepResult('Deep analysis unavailable.');
@@ -133,8 +198,39 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>) {
       });
   }
 
+  // Auto-load all reviews for Google Maps by scrolling the reviews container
+  function findScrollContainer(): HTMLElement | null {
+    const anchor = document.querySelector('[data-review-id], .jftiEf');
+    let el: HTMLElement | null = anchor?.parentElement as HTMLElement | null;
+    while (el) {
+      const oy = getComputedStyle(el).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 40) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function autoLoad() {
+    let lastCount = 0, stable = 0, ticks = 0;
+    const MAX_TICKS = 80;
+    const step = () => {
+      const c = findScrollContainer();
+      const count = document.querySelectorAll('[data-review-id], .jftiEf').length;
+      if (count > lastCount) { lastCount = count; stable = 0; } else { stable++; }
+      ticks++;
+      scan();                       // score whatever is now loaded
+      if (!c || stable >= 5 || ticks >= MAX_TICKS) { refresh(inflight > 0); return; }
+      c.scrollTop = c.scrollHeight;
+      setTimeout(step, 700);
+    };
+    step();
+  }
+
   refresh(true);            // show the panel immediately in its "scanning" state
   scan();
+  if (a.key === 'googleMaps') {
+    autoLoad();
+  }
   new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
 }
 

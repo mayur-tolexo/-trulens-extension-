@@ -2,8 +2,35 @@ import type { Review, DeepAnalysisResult, Settings, ProviderMode } from '../type
 import { getSettings } from './settings';
 import { verdictFor } from '../scoring-core/score';
 
-const PROMPT = (r: Review, siblings: Review[]) =>
-  `You are an expert at detecting fake product/place reviews. Rate how GENUINE this review is from 0 (definitely fake) to 100 (clearly authentic). Consider specificity, emotional authenticity, and similarity to the other reviews.\n\nREVIEW (rating ${r.rating ?? '?'}/5): """${r.text}"""\n\nOTHER REVIEWS ON PAGE:\n${siblings.slice(0, 4).map(x => `- """${x.text}"""`).join('\n')}\n\nReturn ONLY JSON: {"score": <0-100>, "reasoning": "<one sentence>"}`;
+const PROMPT = (r: Review, siblings: Review[]) => {
+  const ctx: string[] = [];
+  if (r.verifiedPurchase === true) ctx.push('verified purchase');
+  if (r.isLocalGuide === true) ctx.push('Google Local Guide');
+  if (r.reviewerReviewCount != null) ctx.push(`${r.reviewerReviewCount} total reviews`);
+  if (r.reviewerPhotoCount != null) ctx.push(`${r.reviewerPhotoCount} photos contributed`);
+  if (r.helpfulCount != null && r.helpfulCount > 0) ctx.push(`${r.helpfulCount} found helpful`);
+  const reviewer = ctx.length ? ctx.join(', ') : 'no profile signals available';
+  const others = siblings.slice(0, 4)
+    .map(x => `- (${x.rating ?? '?'}/5) """${(x.text || '').slice(0, 200)}"""`).join('\n') || '- none';
+  return `You assess how GENUINE a single review is — fairly, with no bias against the business.
+
+Score 0-100: 100 = clearly an authentic first-hand experience; 0 = clearly fake, incentivized, or spam. Give the benefit of the doubt: genuine reviews are often short, emotional, very positive, or harshly critical. Only LOWER the score for concrete manipulation signals:
+- generic/templated wording with no specific details
+- incentivized or promotional phrasing
+- a rating that clearly contradicts the text
+- copy-paste similarity to the other reviews shown below
+- a brand-new account with a single review and no history
+REWARD signs of a real reviewer: specific first-hand details, a credible profile (many reviews/photos, Local Guide), and balanced/mixed opinions.
+
+REVIEWER PROFILE: ${reviewer}
+RATING: ${r.rating ?? '?'}/5
+REVIEW: """${r.text}"""
+
+OTHER REVIEWS ON THIS PAGE (for duplication/pattern context only):
+${others}
+
+Be fair to the business; do not penalize a genuine positive or negative review. Return ONLY JSON: {"score": <0-100>, "reasoning": "<one concise sentence>"}`;
+};
 
 export interface LlmRequest { url: string; headers: Record<string, string>; body: string; }
 

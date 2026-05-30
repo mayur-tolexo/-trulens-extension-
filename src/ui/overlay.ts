@@ -51,7 +51,7 @@ function build(): HTMLElement {
 }
 
 /** Create/update the on-page floating trust panel. */
-export function updateOverlay(name: string | null, summary: ProductSummary, scanning: boolean): void {
+export function updateOverlay(name: string | null, summary: ProductSummary, scanning: boolean, analyzed?: number): void {
   if (!root) root = build();
   const q = (s: string) => root!.querySelector(s) as HTMLElement;
 
@@ -73,9 +73,12 @@ export function updateOverlay(name: string | null, summary: ProductSummary, scan
   verdictEl.setAttribute('data-verdict', has ? v : 'mixed');
   verdictEl.textContent = has ? LABEL[v] : (scanning ? 'Scanning…' : 'No reviews yet');
 
-  q('.trulens-ov-count').textContent = scanning && !has
+  const countBase = scanning && !has
     ? 'Looking for reviews…'
     : `${summary.reviewCount} review${summary.reviewCount === 1 ? '' : 's'} scored`;
+  q('.trulens-ov-count').textContent = (analyzed != null && analyzed > 0)
+    ? `${countBase} · ${analyzed} AI-checked`
+    : countBase;
 
   const total = summary.breakdown.genuine + summary.breakdown.mixed + summary.breakdown.fake || 1;
   (q('.trulens-ov-bar .g')).style.width = (summary.breakdown.genuine / total * 100) + '%';

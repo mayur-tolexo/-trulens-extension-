@@ -111,6 +111,7 @@ async function loadSettings() {
   if (!resp?.ok) throw new Error('Settings unavailable');
   const s = resp.settings;
   (document.getElementById('enabled')      as HTMLInputElement).checked = s.enabled;
+  (document.getElementById('autoDeep')     as HTMLInputElement).checked = s.autoDeep;
   (document.getElementById('amazon')       as HTMLInputElement).checked = s.perSite.amazon;
   (document.getElementById('flipkart')     as HTMLInputElement).checked = s.perSite.flipkart;
   (document.getElementById('googleMaps')   as HTMLInputElement).checked = s.perSite.googleMaps;
@@ -132,6 +133,7 @@ async function saveSettings() {
     type: 'setSettings',
     patch: {
       enabled: (document.getElementById('enabled')    as HTMLInputElement).checked,
+      autoDeep: (document.getElementById('autoDeep')  as HTMLInputElement).checked,
       perSite: {
         amazon:     (document.getElementById('amazon')     as HTMLInputElement).checked,
         flipkart:   (document.getElementById('flipkart')   as HTMLInputElement).checked,

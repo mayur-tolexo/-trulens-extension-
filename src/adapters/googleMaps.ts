@@ -47,6 +47,8 @@ export const googleMapsAdapter: SiteAdapter = {
       const isLocalGuide = /Local Guide/i.test(meta);
       const cm = meta.match(/([0-9,]+)\s+reviews?/i);
       const reviewerReviewCount = cm ? Number(cm[1].replace(/,/g, '')) : null;
+      const pm = meta.match(/([0-9,]+)\s+photos?/i);
+      const reviewerPhotoCount = pm ? Number(pm[1].replace(/,/g, '')) : null;
 
       const ratingEl = el.querySelector('[role="img"][aria-label*="star" i], .kvMYJc[aria-label]');
       const ratingLabel = ratingEl?.getAttribute('aria-label') ?? '';
@@ -56,7 +58,8 @@ export const googleMapsAdapter: SiteAdapter = {
       const review: Review = {
         id: hashId(text, author ?? ''), text,
         rating, author, verifiedPurchase: null, date: null,
-        reviewerReviewCount, isLocalGuide, helpfulCount: null
+        reviewerReviewCount, isLocalGuide, helpfulCount: null,
+        reviewerPhotoCount
       };
       out.push({ review, anchor: el });
     }
