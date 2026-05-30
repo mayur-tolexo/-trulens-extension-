@@ -15,12 +15,8 @@ export default defineManifest({
     'https://api.anthropic.com/*', 'https://api.openai.com/*',
     'https://openrouter.ai/*'
   ],
-  content_scripts: [{
-    matches: [
-      'https://*.amazon.com/*', 'https://*.amazon.in/*',
-      'https://*.flipkart.com/*', 'https://www.google.com/maps/*'
-    ],
-    js: ['src/content/index.ts'],
-    run_at: 'document_idle'
-  }]
+  // NOTE: content_scripts are injected post-build as a self-contained IIFE by
+  // scripts/build-content.mjs. CRXJS's loader uses a dynamic import() that
+  // strict-CSP sites (Google Maps, Amazon) block, so we declare the script
+  // statically instead.
 });
