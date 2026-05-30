@@ -144,3 +144,5 @@ vite.config.ts.timestamp-*
 
 # Visual brainstorming workspace
 .superpowers/
+node_modules/
+dist/
