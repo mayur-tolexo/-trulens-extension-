@@ -30,4 +30,33 @@ describe('detectSignals', () => {
     const s = detectSignals({ ...base, id: 'r3' }, [sib]);
     expect(s.find(x => x.key === 'duplicate')?.delta).toBeLessThan(0);
   });
+  it('penalizes unverified purchase', () => {
+    const s = detectSignals({ ...base, verifiedPurchase: false }, []);
+    expect(s.find(x => x.key === 'unverified')?.delta).toBeLessThan(0);
+  });
+  it('rewards detailed review (>=20 words)', () => {
+    const longText = 'the battery lasts all day camera is sharp screen is bright build quality is solid and performance is excellent overall very happy with purchase';
+    const s = detectSignals({ ...base, verifiedPurchase: null, reviewerReviewCount: 5, helpfulCount: 0, text: longText }, []);
+    expect(s.find(x => x.key === 'detailed')?.delta).toBeGreaterThan(0);
+  });
+  it('penalizes repeated punctuation', () => {
+    const s = detectSignals({ ...base, text: 'great great great!!!!' }, []);
+    expect(s.find(x => x.key === 'repeated_punct')?.delta).toBeLessThan(0);
+  });
+  it('penalizes reviewer with only one review', () => {
+    const s = detectSignals({ ...base, reviewerReviewCount: 1 }, []);
+    expect(s.find(x => x.key === 'single_review')?.delta).toBeLessThan(0);
+  });
+  it('rewards established reviewer (>=10 reviews)', () => {
+    const s = detectSignals({ ...base, reviewerReviewCount: 10 }, []);
+    expect(s.find(x => x.key === 'established_reviewer')?.delta).toBeGreaterThan(0);
+  });
+  it('rewards local guide', () => {
+    const s = detectSignals({ ...base, isLocalGuide: true }, []);
+    expect(s.find(x => x.key === 'local_guide')?.delta).toBeGreaterThan(0);
+  });
+  it('rewards review found helpful by others (>=5)', () => {
+    const s = detectSignals({ ...base, helpfulCount: 5 }, []);
+    expect(s.find(x => x.key === 'helpful')?.delta).toBeGreaterThan(0);
+  });
 });

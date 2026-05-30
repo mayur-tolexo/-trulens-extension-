@@ -5,10 +5,8 @@ function normalize(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** Jaccard similarity over word sets. */
-function similarity(a: string, b: string): number {
-  const A = new Set(normalize(a).split(' ').filter(Boolean));
-  const B = new Set(normalize(b).split(' ').filter(Boolean));
+/** Jaccard similarity over pre-split word sets. */
+function similarity(A: Set<string>, B: Set<string>): number {
   if (A.size === 0 || B.size === 0) return 0;
   let inter = 0;
   for (const w of A) if (B.has(w)) inter++;
@@ -18,7 +16,9 @@ function similarity(a: string, b: string): number {
 export function detectSignals(review: Review, siblings: Review[]): Signal[] {
   const out: Signal[] = [];
   const text = review.text ?? '';
-  const words = normalize(text).split(' ').filter(Boolean);
+  const normText = normalize(text);
+  const words = normText.split(' ').filter(Boolean);
+  const wordSet = new Set(words);
 
   if (review.verifiedPurchase === true)
     out.push({ key: 'verified_purchase', label: 'Verified purchase', delta: +12 });
@@ -56,7 +56,8 @@ export function detectSignals(review: Review, siblings: Review[]): Signal[] {
     out.push({ key: 'helpful', label: 'Found helpful by others', delta: +5 });
 
   for (const sib of siblings) {
-    if (sib.id !== review.id && similarity(text, sib.text ?? '') > 0.8) {
+    const sibSet = new Set(normalize(sib.text ?? '').split(' ').filter(Boolean));
+    if (sib.id !== review.id && similarity(wordSet, sibSet) > 0.8) {
       out.push({ key: 'duplicate', label: 'Near-duplicate of another review', delta: -20 });
       break;
     }

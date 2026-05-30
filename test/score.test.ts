@@ -38,4 +38,10 @@ describe('aggregate', () => {
     expect(s.reviewCount).toBe(2);
     expect(s.breakdown.genuine + s.breakdown.mixed + s.breakdown.fake).toBe(2);
   });
+  it('returns neutral summary for empty results', () => {
+    const s = aggregate([]);
+    expect(s.reviewCount).toBe(0);
+    expect(s.verdict).not.toBe('fake');
+    expect(s.verdict).toBe('mixed');
+  });
 });
