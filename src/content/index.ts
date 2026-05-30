@@ -13,6 +13,17 @@ function placeKey(): string {
   return m ? m[1] : location.pathname;
 }
 
+/** True only when the place panel's "Reviews" tab is the selected tab. */
+function reviewsTabActive(): boolean {
+  for (const t of Array.from(document.querySelectorAll('button[role="tab"]'))) {
+    if (t.getAttribute('aria-selected') === 'true') {
+      const label = (t.getAttribute('aria-label') || t.textContent || '').toLowerCase();
+      if (label.includes('review')) return true;
+    }
+  }
+  return false;
+}
+
 /** Best-effort page name: adapter selector first, else cleaned document.title. */
 function cleanTitle(): string | null {
   const t = document.title
@@ -204,9 +215,8 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       // Auto-enqueue for AI deep analysis if enabled
       if (autoDeep) enqueueDeep(f.review.id);
     }
-    // Start the one-time auto-loader once reviews actually appear (e.g. after
-    // the user opens the Reviews tab). Runs once, scrolls to the bottom, stops.
-    if (a.key === 'googleMaps' && found.length > 0 && !autoLoadStarted) {
+    // Auto-load only while the Reviews tab is open — not on a bare place click.
+    if (a.key === 'googleMaps' && reviewsTabActive() && found.length > 0 && !autoLoadStarted) {
       autoLoadStarted = true;
       autoLoad();
     }
@@ -260,6 +270,13 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
     let lastCount = 0, stable = 0, ticks = 0;
     const MAX_TICKS = 100;
     const step = () => {
+      // Stop immediately if the user switched away from the Reviews tab.
+      if (!reviewsTabActive()) {
+        log('left Reviews tab → stop auto-load');
+        autoLoadStarted = false;    // re-arm so it resumes if they return
+        refresh(inflight > 0);
+        return;
+      }
       const c = findScrollContainer();
       const count = document.querySelectorAll('[data-review-id], .jftiEf').length;
       if (count > lastCount) { lastCount = count; stable = 0; } else { stable++; }
