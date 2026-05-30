@@ -17,10 +17,13 @@
     <label>LLM source
       <select id="providerMode">
         <option value="proxy">Hosted proxy</option>
-        <option value="own-key">My API key</option>
+        <option value="anthropic">Anthropic (own key)</option>
+        <option value="openai-compatible">OpenAI-compatible (MiniMax, OpenAI…)</option>
       </select>
     </label>
     <label>API key <input type="text" id="apiKey" placeholder="sk-ant-…"></label>
+    <label>Base URL <input type="text" id="baseUrl" placeholder="https://api.minimax.io/v1"></label>
+    <label>Model <input type="text" id="model" placeholder="MiniMax-M2 / claude-sonnet-4-6"></label>
   </div>
   <script type="module" src="./popup.ts"></script>
 </body></html>

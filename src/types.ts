@@ -31,13 +31,15 @@ export interface ProductSummary {
   breakdown: { genuine: number; mixed: number; fake: number };
 }
 
-export type ProviderMode = 'proxy' | 'own-key';
+export type ProviderMode = 'proxy' | 'anthropic' | 'openai-compatible';
 
 export interface Settings {
   enabled: boolean;
   perSite: { amazon: boolean; flipkart: boolean; googleMaps: boolean };
   providerMode: ProviderMode;
   apiKey: string;
+  baseUrl: string;   // for openai-compatible, e.g. https://api.minimax.io/v1
+  model: string;     // model name
   proxyUrl: string;
 }
 
@@ -46,6 +48,8 @@ export const DEFAULT_SETTINGS: Settings = {
   perSite: { amazon: true, flipkart: true, googleMaps: true },
   providerMode: 'proxy',
   apiKey: '',
+  baseUrl: 'https://api.minimax.io/v1',
+  model: 'claude-sonnet-4-6',
   proxyUrl: 'https://trulens-proxy.example.workers.dev/analyze'
 };
 

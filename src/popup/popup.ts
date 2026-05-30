@@ -14,6 +14,8 @@ async function load() {
   (document.getElementById('googleMaps') as HTMLInputElement).checked = settings.perSite.googleMaps;
   (document.getElementById('providerMode') as HTMLSelectElement).value = settings.providerMode;
   (document.getElementById('apiKey') as HTMLInputElement).value = settings.apiKey;
+  (document.getElementById('baseUrl') as HTMLInputElement).value = settings.baseUrl;
+  (document.getElementById('model') as HTMLInputElement).value = settings.model;
 }
 
 function wire() {
@@ -26,7 +28,9 @@ function wire() {
         googleMaps: (document.getElementById('googleMaps') as HTMLInputElement).checked
       },
       providerMode: (document.getElementById('providerMode') as HTMLSelectElement).value as Settings['providerMode'],
-      apiKey: (document.getElementById('apiKey') as HTMLInputElement).value
+      apiKey: (document.getElementById('apiKey') as HTMLInputElement).value,
+      baseUrl: (document.getElementById('baseUrl') as HTMLInputElement).value,
+      model: (document.getElementById('model') as HTMLInputElement).value
     }});
   };
   document.querySelectorAll('input,select').forEach(el => el.addEventListener('change', save));
