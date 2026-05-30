@@ -29,6 +29,18 @@ describe('detectSignals', () => {
     const s = detectSignals({ ...base, rating: 5, text: 'A good place for food and great ambience, my kid enjoyed the continental food and we tried Bengali fish and chicken, authentic Bengali food, must try in and around JP Nagar, dungeon theme indeed' }, []);
     expect(s.find(x => x.key === 'rating_mismatch')).toBeUndefined();
   });
+  it('does NOT penalize ellipses as repeated punctuation', () => {
+    const s = detectSignals({ ...base, text: 'We visited thrice and ordered authentic items.... It was full worthy of money....' }, []);
+    expect(s.find(x => x.key === 'repeated_punct')).toBeUndefined();
+  });
+  it('still penalizes spammy !!! and repeated letters', () => {
+    expect(detectSignals({ ...base, text: 'loooove it so good' }, []).find(x => x.key === 'repeated_punct')?.delta).toBeLessThan(0);
+    expect(detectSignals({ ...base, text: 'best ever!!!' }, []).find(x => x.key === 'repeated_punct')?.delta).toBeLessThan(0);
+  });
+  it('treats a reviewer with 5+ reviews as established', () => {
+    const s = detectSignals({ ...base, reviewerReviewCount: 5 }, []);
+    expect(s.find(x => x.key === 'established_reviewer')?.delta).toBeGreaterThan(0);
+  });
   it('penalizes near-duplicate of a sibling', () => {
     const sib = { ...base, id: 'r2' };
     const s = detectSignals({ ...base, id: 'r3' }, [sib]);

@@ -34,7 +34,9 @@ export function detectSignals(review: Review, siblings: Review[]): Signal[] {
   if (letters.length >= 12 && letters === letters.toUpperCase())
     out.push({ key: 'all_caps', label: 'Excessive capitalization', delta: -10 });
 
-  if (/(.)\1{3,}|!{3,}/.test(text))
+  // Spammy emphasis: a letter repeated 4+ times (loooove) or 3+ !/? in a row.
+  // NOTE: do NOT penalize ellipses ("....") — they're normal in casual reviews.
+  if (/([a-z])\1{3,}|[!?]{3,}/i.test(text))
     out.push({ key: 'repeated_punct', label: 'Repeated characters/punctuation', delta: -6 });
 
   if (review.rating != null) {
@@ -50,7 +52,7 @@ export function detectSignals(review: Review, siblings: Review[]): Signal[] {
 
   if (review.reviewerReviewCount != null && review.reviewerReviewCount <= 1)
     out.push({ key: 'single_review', label: 'Reviewer has only one review', delta: -8 });
-  if (review.reviewerReviewCount != null && review.reviewerReviewCount >= 10)
+  if (review.reviewerReviewCount != null && review.reviewerReviewCount >= 5)
     out.push({ key: 'established_reviewer', label: 'Established reviewer history', delta: +6 });
 
   if (review.isLocalGuide === true)
