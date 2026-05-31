@@ -132,9 +132,12 @@
 <body>
   <div class="container">
 
+    <!-- PLACEHOLDER: Replace the URL below with your actual hosted URL before submitting to the Chrome Web Store.
+         Example: https://<your-github-username>.github.io/<repo-name>/privacy.html
+         GitHub Pages setup: Settings → Pages → Source: Deploy from branch → main → /docs -->
     <div class="url-notice">
       <strong>Note for the developer:</strong> Hosted at: <code>&lt;your-url&gt;</code>
-      — replace this placeholder with your actual GitHub Pages or hosting URL before submitting to the Chrome Web Store.
+      &mdash; replace this placeholder with your actual GitHub Pages or hosting URL before submitting to the Chrome Web Store.
       Example: <code>https://&lt;your-github-username&gt;.github.io/trulens/privacy.html</code>
     </div>
 
@@ -142,7 +145,7 @@
     <p class="meta">Last updated: 2026-05-31 &nbsp;&bull;&nbsp; Version 1.0.0</p>
 
     <h2>What TruLens Does</h2>
-    <p>TruLens is a browser extension that scores how genuine product and place reviews are on Amazon, Flipkart, and Google Maps. It attaches a colored shield badge and a 0&ndash;100 score to each visible review, and displays an overall trust summary in an on-page panel and the toolbar popup.</p>
+    <p>TruLens is a browser extension that scores how genuine place reviews are on <strong>Google Maps</strong> (v1). It attaches a colored shield badge and a 0&ndash;100 score to each visible review, and displays an overall trust summary in an on-page panel and the toolbar popup. Support for Amazon and Flipkart is planned for a future release.</p>
 
     <h2>Data Processing and Privacy</h2>
 
@@ -150,31 +153,37 @@
     <div class="highlight-box">
       The core scoring engine runs entirely inside your browser. No review text, page content, user identifiers, or behavioral data are transmitted anywhere for local scoring.
     </div>
-    <p>When TruLens reads reviews on a supported page, it analyzes the text and metadata using built-in heuristic rules (signal detection, sentiment analysis, pattern matching). This process is fully on-device, with no network requests. No TruLens server exists to receive such data.</p>
+    <p>When TruLens reads reviews on a Google Maps place page, it analyzes the text and metadata using built-in heuristic rules (signal detection, sentiment analysis, pattern matching). This process is fully on-device, with no network requests. No TruLens server exists to receive such data.</p>
 
-    <h3>AI deep analysis &mdash; opt-in, bring-your-own-key</h3>
+    <h3>AI deep analysis &mdash; opt-in</h3>
     <div class="warning-box">
-      This feature is <strong>disabled by default</strong>. It only activates when you supply your own API key and explicitly enable AI analysis in Settings.
+      This feature is <strong>disabled by default</strong>. It only activates when AI analysis is enabled and configured (a user API key is entered, or the owner's free proxy is deployed).
     </div>
-    <p>TruLens offers an optional "deep analysis" feature that sends a review to a large-language-model (LLM) provider for a more detailed genuineness verdict. This feature activates only when you:</p>
-    <ol>
-      <li>Open the TruLens popup, navigate to Settings, and enter your own API key for a provider (MiniMax, OpenAI, Anthropic, or an OpenAI-compatible endpoint such as OpenRouter).</li>
-      <li>Enable the AI analysis toggle.</li>
-    </ol>
-    <p>When both conditions are met and you click "Deep analysis" on a specific review, TruLens will send the text of that review &mdash; plus a small number of sibling reviews from the same page to provide context &mdash; <strong>directly from your browser to the API endpoint of the provider you chose</strong>. The request is authenticated with the API key you supplied. TruLens itself is not a middleman; no review text passes through any TruLens server.</p>
-    <p><strong>No review text is sent anywhere if AI analysis is disabled or if you have not entered an API key.</strong></p>
+    <p>TruLens offers an optional "deep analysis" feature that sends a review to a large-language-model (LLM) provider for a more detailed genuineness verdict. When enabled and you click "Deep analysis" on a specific review, TruLens sends the text of that review &mdash; plus a small number of sibling reviews from the same page to provide context &mdash; to an AI provider. <strong>No review text is sent anywhere if AI analysis is disabled or not configured.</strong></p>
 
     <h3>Free shared-AI tier (proxy mode)</h3>
-    <p>When the extension owner has deployed the included Cloudflare Worker proxy, the default provider mode is <em>proxy</em>. In this mode, review text is sent from your browser to the <strong>owner's Cloudflare Worker</strong> (not directly to MiniMax). The Worker forwards the request to MiniMax using the owner's server-side API key. The owner's API key is never transmitted to your browser or included in the extension bundle. The proxy does not log or store review text; it only records a per-user per-day request count (keyed on an anonymous device UUID) in a Cloudflare KV namespace for rate-limiting purposes. No personal data is stored.</p>
+    <p>The extension's default provider mode is <em>proxy</em>. When the extension owner has deployed the included Cloudflare Worker and set <code>DEFAULT_PROXY_URL</code>, AI deep analysis works without a user API key. In this mode:</p>
+    <ul>
+      <li>Review text is sent from your browser to the <strong>owner's Cloudflare Worker</strong> (not directly to MiniMax).</li>
+      <li>The Worker forwards the request to MiniMax using the <strong>owner's server-side API key</strong>. That key is stored as a Cloudflare secret; it is never transmitted to your browser or included in the extension bundle.</li>
+      <li>The proxy does <strong>not</strong> log or store review text. It records only a per-user per-day request count (keyed on an anonymous device UUID) in a Cloudflare KV namespace for rate-limiting. This counter contains no personal data.</li>
+      <li>The default daily limit is <strong>40 requests per user per day</strong> (UTC). Once reached, additional requests are rejected until the next UTC day.</li>
+      <li>If <code>DEFAULT_PROXY_URL</code> is empty (the default in the source repository before deployment), the free tier is dormant &mdash; no proxy requests are made and no errors are shown.</li>
+    </ul>
+
+    <h3>Bring-your-own-key (BYOK) mode</h3>
+    <p>You can switch to BYOK mode in Settings and paste your own API key for MiniMax (OpenAI-compatible, base URL <code>https://api.minimax.io/v1</code>, model <code>MiniMax-M2</code>) or Anthropic. When BYOK mode is active, review text is sent <strong>directly from your browser to the API endpoint of the provider you chose</strong>, authenticated with your key. TruLens is not a middleman; no review text passes through any TruLens server.</p>
 
     <h2>What Is Stored Locally</h2>
     <p>TruLens uses <code>chrome.storage.local</code> (browser-local extension storage) to persist:</p>
     <ul>
-      <li><strong>Your settings</strong> &mdash; provider choice, AI analysis on/off state, UI preferences.</li>
-      <li><strong>Your API key</strong> &mdash; stored only in local extension storage on your own device. Never transmitted to TruLens or any party other than the provider you selected.</li>
+      <li><strong>Your settings</strong> &mdash; provider mode, AI analysis on/off state, UI preferences.</li>
+      <li><strong>Your API key</strong> (BYOK mode) &mdash; stored only in local extension storage on your own device. Never transmitted to TruLens or any party other than the provider you selected.</li>
       <li><strong>AI result cache</strong> &mdash; LLM verdicts are cached locally to avoid sending the same review to a provider more than once. Cached data never leaves your device.</li>
+      <li><strong>Per-place summaries</strong> &mdash; trust scores and breakdowns for previously visited places, so revisits render instantly and only new reviews are re-scanned.</li>
+      <li><strong>Anonymous device UUID</strong> &mdash; a random identifier generated locally, used only as a rate-limit key for the free proxy tier. Not linked to your identity or browsing activity.</li>
     </ul>
-    <p>All of this data lives solely in your browser's extension storage and is not sent to any TruLens server.</p>
+    <p>All of this data lives solely in your browser's extension storage and is not sent to any TruLens server. Clicking "Reset to defaults" in Settings clears all stored data from <code>chrome.storage.local</code>.</p>
 
     <h2>What TruLens Does Not Do</h2>
     <ul>
@@ -182,7 +191,7 @@
       <li>TruLens does <strong>not collect</strong> browsing history, page URLs, user identifiers, or any personal data.</li>
       <li>TruLens does <strong>not transmit</strong> anything to its developer.</li>
       <li>TruLens does <strong>not sell</strong> any data.</li>
-      <li>TruLens does <strong>not execute remote code</strong>. All logic is bundled in the installed package (Manifest V3).</li>
+      <li>TruLens does <strong>not execute remote code</strong>. All logic is bundled in the installed package (Manifest V3, no <code>eval</code>, no remote scripts).</li>
     </ul>
 
     <h2>Permissions Explained</h2>
@@ -193,55 +202,37 @@
       <tbody>
         <tr>
           <td><code>storage</code></td>
-          <td>Save your settings and cache AI results locally in the browser.</td>
+          <td>Save your settings, API key, and cached AI results locally in the browser.</td>
         </tr>
         <tr>
-          <td><code>*.amazon.com</code>, <code>*.amazon.in</code></td>
-          <td>Read review content on Amazon product pages and inject genuineness badges.</td>
+          <td><code>https://www.google.com/maps/*</code></td>
+          <td>Read review content on Google Maps place pages and inject genuineness badges. This is the extension's core function.</td>
         </tr>
         <tr>
-          <td><code>*.flipkart.com</code></td>
-          <td>Read review content on Flipkart product pages and inject genuineness badges.</td>
+          <td><code>https://api.minimax.io/*</code></td>
+          <td>Allow the extension service worker to call MiniMax when AI analysis is enabled with an OpenAI-compatible (e.g., MiniMax) key.</td>
         </tr>
         <tr>
-          <td><code>www.google.com/maps</code></td>
-          <td>Read review content on Google Maps place pages and inject genuineness badges.</td>
+          <td><code>https://api.anthropic.com/*</code></td>
+          <td>Allow the extension service worker to call Anthropic when AI analysis is enabled with an Anthropic key.</td>
         </tr>
         <tr>
-          <td><code>api.minimax.io</code>, <code>api.minimaxi.com</code></td>
-          <td>Allow the extension service worker to call MiniMax directly when AI analysis is enabled with a MiniMax key.</td>
-        </tr>
-        <tr>
-          <td><code>api.anthropic.com</code></td>
-          <td>Allow the extension service worker to call Anthropic directly when AI analysis is enabled with an Anthropic key.</td>
-        </tr>
-        <tr>
-          <td><code>api.openai.com</code></td>
-          <td>Allow the extension service worker to call OpenAI directly when AI analysis is enabled with an OpenAI key.</td>
-        </tr>
-        <tr>
-          <td><code>openrouter.ai</code></td>
-          <td>Allow the extension service worker to call OpenRouter directly when AI analysis is enabled with an OpenRouter key.</td>
-        </tr>
-        <tr>
-          <td><code>*.workers.dev</code></td>
+          <td><code>https://*.workers.dev/*</code></td>
           <td>Allow the extension service worker to call the owner-hosted Cloudflare Worker proxy when the free shared-AI tier is active. The proxy holds the owner's API key server-side; no key is transmitted from the extension.</td>
         </tr>
       </tbody>
     </table>
 
     <h2>Third-Party AI Providers</h2>
-    <p>If you enable AI deep analysis, review text will be processed by the LLM provider you configured. TruLens has no control over how those providers handle data. Please review the relevant privacy policy before enabling this feature:</p>
+    <p>If you enable AI deep analysis, review text will be processed by the LLM provider involved. TruLens has no control over how those providers handle data. Please review the relevant privacy policy before enabling this feature:</p>
     <ul>
       <li><strong>MiniMax:</strong> <a href="https://www.minimaxi.com/privacy-policy" target="_blank" rel="noopener">https://www.minimaxi.com/privacy-policy</a></li>
-      <li><strong>OpenAI:</strong> <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">https://openai.com/policies/privacy-policy</a></li>
       <li><strong>Anthropic:</strong> <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">https://www.anthropic.com/privacy</a></li>
-      <li><strong>OpenRouter:</strong> <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">https://openrouter.ai/privacy</a></li>
     </ul>
 
     <h2>How to Disable AI Analysis or Clear Stored Data</h2>
     <p><strong>To disable AI analysis:</strong> Open the TruLens toolbar popup &rarr; Settings &rarr; toggle AI Analysis off. No further review text will be sent to any provider.</p>
-    <p><strong>To remove your API key and cached data:</strong> Open the TruLens toolbar popup &rarr; Settings &rarr; "Reset to defaults". This clears all locally stored settings and cached AI results.</p>
+    <p><strong>To remove your API key and cached data:</strong> Open the TruLens toolbar popup &rarr; Settings &rarr; "Reset to defaults". This clears all locally stored settings, cached AI results, and per-place summaries from <code>chrome.storage.local</code>.</p>
     <p><strong>To uninstall TruLens entirely:</strong> Remove the extension from <code>chrome://extensions</code>. Chrome will delete all associated extension storage, including your API key and cache.</p>
 
     <h2>Children's Privacy</h2>

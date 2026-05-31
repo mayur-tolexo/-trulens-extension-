@@ -1,12 +1,20 @@
 # Chrome Web Store — Listing Copy
 
+## Title
+
+```
+TruLens — Review Genuineness
+```
+
+---
+
 ## Short Summary (≤ 132 characters)
 
 ```
-Instantly score every Google Maps review for genuineness — on-device, private, no server.
+Spot fake Google Maps reviews instantly — on-device badges, free shared AI, or bring your own key.
 ```
 
-*(90 characters — within the 132-character limit)*
+*(98 characters — within the 132-character limit)*
 
 ---
 
@@ -30,24 +38,29 @@ Each badge also shows a 0–100 score and a 5-star equivalent. Tap any badge to 
 **Trust summary panel & popup**
 An on-page panel and the toolbar popup both display an overall trust gauge, a plain-language verdict ("Mostly genuine", "Treat with caution", etc.), and a breakdown of how many reviews fall into each category.
 
-**Optional AI deep analysis**
-Want a sharper verdict? Enable the optional AI deep-analysis feature — bring your own API key for MiniMax (free tier available), OpenAI, or Anthropic — and get a more detailed per-review reasoning. The feature is off by default; you're in full control.
+**Free shared AI tier (no key needed)**
+TruLens ships with a built-in free shared-AI tier. When the extension owner has deployed the included Cloudflare Worker proxy, AI deep analysis works out of the box with no API key required — subject to a daily rate limit.
 
-**Free shared AI tier (optional)**
-TruLens ships with a built-in free shared-AI tier. When the extension owner has deployed the included Cloudflare Worker proxy, AI deep analysis works out of the box with no API key required — subject to a daily rate limit. For unlimited analysis, switch to "My own key" mode in Settings and enter your own MiniMax or Anthropic API key.
+**Bring your own key for unlimited analysis**
+Switch to "My own key" mode in Settings and enter your own MiniMax or Anthropic API key for unlimited AI deep analysis. Your key is stored only in your browser's local extension storage and is sent only to the provider you chose — never to TruLens.
 
 **Completely private by design**
-The heuristic scoring engine runs 100 % inside your browser. No data, review text, page content, or browsing history is ever sent anywhere for the local scoring. When AI analysis is enabled, the review text goes directly from your browser to your chosen AI provider — TruLens has no server, no analytics, and never sees your data.
+The heuristic scoring engine runs 100% inside your browser. No data, review text, page content, or browsing history is ever sent anywhere for the local scoring. When AI analysis is enabled, the reviewed text goes from your browser to your chosen AI provider (BYOK) or to the owner's Cloudflare Worker proxy (free tier) — TruLens has no analytics server and never sees your data. The proxy does not store review text; it only records a per-user daily request counter for rate-limiting.
+
+**Places are remembered — revisits are instant**
+TruLens remembers every place you've visited. On a return visit, cached scores appear immediately; only new reviews are re-scanned.
 
 **Feature list**
 - Genuine / Mixed / Fake shield badge on every review, rendered instantly
 - 0–100 genuineness score + 5-star equivalent per review
-- Clickable detail card: signals list, confidence breakdown
+- Clickable detail card: signal list and confidence breakdown
 - On-page overlay panel with overall trust gauge and verdict
 - Toolbar popup with trust summary and per-category counts
-- Opt-in AI deep analysis (bring-your-own-key: MiniMax, OpenAI, or Anthropic)
-- AI results cached locally — no repeat API calls for the same review
+- Opt-in AI deep analysis: free shared tier (no key) OR bring-your-own-key (MiniMax or Anthropic)
+- Daily rate limit on free tier; BYOK for unlimited analysis
+- AI results and per-place summaries cached locally — no repeat API calls for the same review
 - All settings and API key stored locally in the browser — never transmitted to TruLens
+- Auto-loads all reviews on the Reviews tab
 - Supports Google Maps (v1) — Amazon and Flipkart coming soon
 - Manifest V3, no remote code, fully bundled
 
@@ -60,19 +73,17 @@ Google Maps *(Amazon and Flipkart support coming soon)*
 
 **Productivity**
 
-*(Alternative: "Tools" or "Shopping" — "Productivity" fits best as a research/decision-making aid.)*
+*(Rationale: TruLens is a research and decision-making tool — users consult it before choosing a restaurant, hotel, or business. "Productivity" fits better than "Shopping" because it applies to all types of places, not just retail purchases.)*
 
 ---
 
 ## Search Keywords
 
 ```
-fake review detector, review authenticity, review checker, Google Maps reviews,
-review score, genuine reviews, review trust, review analysis,
-review badge, place review, local business review quality
+fake review detector, review authenticity, review checker, Google Maps reviews, genuine reviews
 ```
 
-*(Pick up to 5 in the store form — recommended: "fake review detector", "review authenticity", "review checker", "Google Maps reviews", "genuine reviews")*
+*(Five keywords — the Chrome Web Store accepts up to 5 in the search terms field.)*
 
 ---
 
@@ -80,33 +91,33 @@ review badge, place review, local business review quality
 
 | Asset | Size | Source / Notes |
 |---|---|---|
-| Store icon | 128 × 128 px PNG | `public/icon-128.png` — generated by `npm run icons` |
-| Small promotional tile | 440 × 280 px PNG | `store-assets/promo-440x280.png` — generated by `npm run icons` |
-| Large promotional tile (optional) | 920 × 680 px PNG | Not required but improves store visibility. |
-| Marquee promo tile (optional) | 1400 × 560 px PNG | Required only if featured. |
+| Store icon | 128×128 px PNG | `public/icon-128.png` — generated by `npm run icons` |
+| Small promotional tile | 440×280 px PNG | `store-assets/promo-440x280.png` — generated by `npm run icons` |
+| Large promotional tile (optional) | 920×680 px PNG | Not required but improves store visibility |
+| Marquee promo tile (optional) | 1400×560 px PNG | Required only if featured |
 
-### Screenshots (1280 × 800, generated by `npm run screenshots` → `store-assets/screenshots/`)
+### Screenshots (1280×800, generated by `npm run screenshots` → `store-assets/screenshots/`)
 
-Upload in this order:
+Upload in this order (store accepts up to 5; recommended set is screenshots 1, 2, 4, 3, 5):
 
 | # | File | Shows |
 |---|---|---|
-| 1 | `01-store.png` | On-page trust panel — instant score, verdict, 5-star, breakdown bar. **(hero)** |
-| 2 | `02-store.png` | Red "Likely fake" badges flagging suspicious 5-star reviews. **(differentiator)** |
-| 3 | `03-store.png` | A green "Likely genuine" badge on a real review. |
-| 4 | `04-store.png` | Toolbar popup trust summary (gauge, verdict, breakdown). |
-| 5 | `05-store.png` | Settings — free shared AI + bring-your-own-key, privacy note. |
-| 6 | `06-store.png` | TruLens in context, right inside Google Maps. |
+| 1 | `01-store.png` | On-page trust panel — instant score, verdict, 5-star, breakdown bar **(hero)** |
+| 2 | `02-store.png` | Red "Likely fake" badges flagging suspicious 5-star reviews **(differentiator)** |
+| 3 | `03-store.png` | A green "Likely genuine" badge on a real review |
+| 4 | `04-store.png` | Toolbar popup trust summary (gauge, verdict, breakdown) |
+| 5 | `05-store.png` | Settings — free shared AI + bring-your-own-key, privacy note |
+| 6 | `06-store.png` | TruLens in context, right inside Google Maps |
 
-The Chrome Web Store accepts up to **5** screenshots — recommended order is 1, 2, 4, 3, 5 (drop 6 if limited to five). All are clean. Source captures live in `./screenshots/`; rerun `npm run screenshots` after adding new ones.
+Source captures live in `./screenshots/`; rerun `npm run screenshots` after adding new ones.
 
-> Screenshots are framed from real captures of the running extension on a live Google Maps page — they reflect actual behaviour, which the store requires.
+> Screenshots are framed from real captures of the running extension on a live Google Maps page — they must reflect actual behaviour, which the Chrome Web Store requires.
 
 ---
 
 ## Single-Purpose Statement
 
-> TruLens scores how genuine place reviews are on Google Maps, by running on-device heuristic analysis and optional user-initiated AI deep analysis using the user's own API key.
+> TruLens scores how genuine place reviews are on Google Maps, by running on-device heuristic analysis and optional user-initiated AI deep analysis using the user's own API key or a free owner-hosted proxy.
 
 ---
 
@@ -116,20 +127,19 @@ Paste each line into the corresponding "Permission justification" field when pro
 
 | Permission | Justification |
 |---|---|
-| `storage` | Used to save the user's settings (provider choice, AI on/off toggle, UI preferences) and to cache LLM verdicts locally so the same review is not sent to the AI provider more than once. No data is sent to any server. |
-| Host: `www.google.com/maps` | The extension's content script must read review text and metadata from Google Maps place pages in order to compute genuineness scores and inject shield badges beside each review. |
-| Host: `api.minimax.io`, `api.minimaxi.com` | The extension's service worker calls the MiniMax API directly when the user has opted into AI deep analysis and supplied a MiniMax API key. No calls are made without the key and without the user's explicit action. |
-| Host: `api.anthropic.com` | The extension's service worker calls the Anthropic API directly when the user has opted into AI deep analysis and supplied an Anthropic API key. No calls are made without the key and without the user's explicit action. |
-| Host: `api.openai.com` | The extension's service worker calls the OpenAI API directly when the user has opted into AI deep analysis and supplied an OpenAI API key. No calls are made without the key and without the user's explicit action. |
-| Host: `*.workers.dev` | The extension's service worker calls the owner-hosted Cloudflare Worker proxy when the free shared-AI tier is active. The proxy holds the owner's API key server-side; no key is transmitted from the extension bundle. |
+| `storage` | Used to save the user's settings (provider choice, AI on/off toggle, UI preferences) and to cache AI verdicts locally so the same review is not re-analyzed. No data is sent to any server. |
+| Host: `https://www.google.com/maps/*` | The extension's content script must read review text and metadata from Google Maps place pages in order to compute genuineness scores and inject shield badges beside each review. This is the extension's core function — it cannot operate without access to this page. |
+| Host: `https://api.minimax.io/*` | The extension's service worker calls the MiniMax API when the user has opted into AI deep analysis with an OpenAI-compatible (e.g., MiniMax) key. No calls are made unless the user has explicitly entered a key and enabled AI analysis. |
+| Host: `https://api.anthropic.com/*` | The extension's service worker calls the Anthropic API when the user has opted into AI deep analysis with an Anthropic key. No calls are made unless the user has explicitly entered a key and enabled AI analysis. |
+| Host: `https://*.workers.dev/*` | The extension's service worker calls the owner-hosted Cloudflare Worker proxy when the free shared-AI tier is active. The proxy holds the owner's API key server-side; no key is transmitted from the extension bundle. Only POST requests to the chat-completions endpoint are made. Users on BYOK mode never trigger this permission. |
 
 ---
 
 ## Data Use Disclosures (store form checkboxes / declarations)
 
 - **Single purpose:** Yes — the extension's single purpose is scoring the genuineness of reviews on Google Maps.
-- **Handles user data:** The extension handles user-supplied API keys (stored locally, never transmitted to TruLens). When AI analysis is enabled by the user, review text is sent to the user's chosen third-party provider.
+- **Handles user data:** The extension handles user-supplied API keys (stored locally in the browser, never transmitted to TruLens). When AI analysis is enabled by the user, the text of analyzed reviews is sent to the user's chosen provider (BYOK) or the owner's Cloudflare Worker proxy (free tier).
 - **Sells user data:** No.
 - **Uses data for purposes other than the extension's core function:** No.
-- **Transmits personal data to a server:** No (the user's API key goes to the third-party provider they chose; nothing goes to TruLens).
-- **Uses remote code:** No. All logic is bundled in the extension package (Manifest V3).
+- **Transmits personal data to a server run by the developer:** No. The user's API key goes only to the third-party provider the user chose. In free-tier proxy mode, review text passes through the owner's Cloudflare Worker solely to forward it to MiniMax; the proxy does not store review text.
+- **Uses remote code:** No. All logic is bundled in the extension package (Manifest V3, no eval, no remote scripts).
