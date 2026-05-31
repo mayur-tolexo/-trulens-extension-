@@ -22,6 +22,6 @@ export async function setCached(text: string, result: DeepAnalysisResult): Promi
 
 export async function clearCache(): Promise<void> {
   const all = await chrome.storage.local.get(null);
-  const keys = Object.keys(all).filter(k => k.startsWith('tl_'));
+  const keys = Object.keys(all).filter(k => k.startsWith('tl_') || k.startsWith('tlp_'));
   if (keys.length > 0) await chrome.storage.local.remove(keys);
 }

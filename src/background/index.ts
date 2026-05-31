@@ -1,6 +1,7 @@
 import { runDeepAnalysis, runBatchAnalysis, testConnection } from './llm';
 import { getCached, setCached, clearCache } from './cache';
 import { getSettings, setSettings } from './settings';
+import { getPlace, setPlace } from './placeCache';
 
 // Open the onboarding/options page on first install only (not on update or reload).
 chrome.runtime.onInstalled.addListener((details) => {
@@ -54,6 +55,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       if (msg.type === 'getSettings') return sendResponse({ ok: true, settings: await getSettings() });
       if (msg.type === 'setSettings') return sendResponse({ ok: true, settings: await setSettings(msg.patch) });
       if (msg.type === 'clearCache') { await clearCache(); return sendResponse({ ok: true }); }
+      if (msg.type === 'getPlace') return sendResponse({ ok: true, place: await getPlace(msg.placeId) });
+      if (msg.type === 'setPlace') { await setPlace(msg.placeId, msg.place); return sendResponse({ ok: true }); }
       sendResponse({ ok: false, error: 'unknown message' });
     } catch (e) {
       sendResponse({ ok: false, error: (e as Error).message });

@@ -13,6 +13,12 @@ function placeKey(): string {
   return m ? m[1] : location.pathname;
 }
 
+/** Stable Google Maps place id from the URL feature id, else the place-name key. */
+function placeId(): string {
+  const m = location.href.match(/!1s([^!?]+)/);
+  return m ? m[1] : placeKey();
+}
+
 /** True only when the place panel's "Reviews" tab is the selected tab. */
 function reviewsTabActive(): boolean {
   for (const t of Array.from(document.querySelectorAll('button[role="tab"]'))) {
@@ -112,6 +118,9 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
   const mounts = new Map<string, { f: ExtractedReview; container: Element; position: InsertPosition }>();
   // All reviews seen, keyed by id, for sibling context
   const seen = new Map<string, Review>();
+  // Per-place memory cache: pre-loaded from storage on place load
+  const cachedResults = new Map<string, ScoreResult>();
+  let persistTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Batch AI queue state
   const pending: string[] = [];
@@ -144,6 +153,39 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
     return [...seen.values()].filter(r => !ids.includes(r.id)).slice(0, 3);
   }
 
+  function loadPlaceCache() {
+    const id = placeId();
+    const gen = generation;
+    try {
+      chrome.runtime.sendMessage({ type: 'getPlace', placeId: id }, (resp) => {
+        if (chrome.runtime.lastError) return;
+        if (gen !== generation) return;            // place changed while loading
+        const place = resp?.place;
+        if (!place || !place.perReview) return;
+        for (const [rid, res] of Object.entries(place.perReview) as [string, ScoreResult][]) {
+          cachedResults.set(rid, res);
+          if (!pageResults.has(rid)) pageResults.set(rid, res);  // instant summary from memory
+        }
+        refresh();                                  // show remembered summary immediately
+      });
+    } catch { /* context invalidated */ }
+  }
+
+  function persistPlace() {
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      if (pageResults.size === 0) return;
+      const summary = aggregate([...pageResults.values()]);
+      const perReview = Object.fromEntries([...pageResults.entries()]);
+      const name = (a.pageName && a.pageName(document)) || cleanTitle();
+      try {
+        chrome.runtime.sendMessage(
+          { type: 'setPlace', placeId: placeId(), place: { name, reviewCount: summary.reviewCount, summary, perReview, at: 0 } },
+          () => void chrome.runtime.lastError);
+      } catch { /* ignore */ }
+    }, 2000);
+  }
+
   function enqueueDeep(id: string) {
     if (queuedIds.has(id)) return;
     queuedIds.add(id); pending.push(id); pumpBatches();
@@ -171,6 +213,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
                 renderFor(r.id, pageResults.get(r.id)!);
                 analyzed++;
               }
+              persistPlace();
             }
             refresh();
             pumpBatches();
@@ -189,6 +232,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
     seen.clear();
     scored.clear();
     mounts.clear();
+    cachedResults.clear();
     pending.length = 0;
     queuedIds.clear();
     analyzed = 0;
@@ -196,6 +240,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
     loading = true;
     log('place changed → reset');
     refresh();               // immediately clear the panel to the new-place state
+    loadPlaceCache();        // load new place's memory immediately
   }
 
   const scan = debounce(() => {
@@ -227,7 +272,8 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       scored.add(f.review.id);
       added++;
 
-      const result = scoreReview(f.review, all);
+      const cached = cachedResults.get(f.review.id);
+      const result = cached ?? scoreReview(f.review, all);
       pageResults.set(f.review.id, result);
 
       const mount = a.badgeMount(f.anchor);
@@ -236,8 +282,8 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
 
       renderFor(f.review.id, result);
 
-      // Auto-enqueue for AI deep analysis if enabled
-      if (autoDeep) enqueueDeep(f.review.id);
+      // Auto-enqueue for AI deep analysis if enabled, skip reviews we already remember
+      if (autoDeep && !cached) enqueueDeep(f.review.id);
     }
     // Auto-load only while the Reviews tab is open — not on a bare place click.
     if (a.key === 'googleMaps' && reviewsTabActive() && found.length > 0 && !autoLoadStarted) {
@@ -250,6 +296,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       loading = true;
       clearTimeout(settleTimer);
       settleTimer = setTimeout(() => { loading = false; refresh(); }, 1500);
+      persistPlace();
     }
     refresh();
   }, 250);
@@ -335,6 +382,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
   }
 
   loading = true; refresh(); // show the panel immediately in its "scanning" state
+  loadPlaceCache();          // load remembered summary instantly on revisit
   scan();                    // autoLoad is kicked off from scan() once reviews appear
   new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
 }
