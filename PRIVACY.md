@@ -24,11 +24,11 @@ When AI analysis runs and you click "Deep analysis" on a specific review, TruLen
 
 #### Free shared-AI tier (proxy mode — default when deployed)
 
-The extension's default `providerMode` is `proxy`. When the extension owner has deployed the included Cloudflare Worker (in `proxy/`) and set `DEFAULT_PROXY_URL` in `src/types.ts`, AI deep analysis works without a user API key. In this mode:
+The extension's default `providerMode` is `proxy`. When the extension owner has deployed the included AWS Lambda proxy (in `proxy/aws/`) and set `DEFAULT_PROXY_URL` in `src/types.ts`, AI deep analysis works without a user API key. In this mode:
 
-- Review text is sent from your browser to the **owner's Cloudflare Worker** (not directly to MiniMax).
-- The Worker forwards the request to MiniMax using the **owner's server-side API key**. That key is stored as a Cloudflare secret; it is never transmitted to your browser or included in the extension bundle.
-- The proxy does **not** log or store review text. It records only a per-user per-day request count (keyed on an anonymous device UUID stored in your browser's local extension storage) in a Cloudflare KV namespace for rate-limiting purposes. This counter contains no personal data.
+- Review text is sent from your browser to the **owner's AWS Lambda Function URL** (not directly to MiniMax).
+- The Lambda function forwards the request to MiniMax using the **owner's server-side API key**. That key is stored as a Lambda environment variable (encrypted at rest by AWS); it is never transmitted to your browser or included in the extension bundle.
+- The proxy does **not** log or store review text. It records only a per-user per-day request count (keyed on an anonymous device UUID stored in your browser's local extension storage) in a DynamoDB table for rate-limiting purposes. This counter contains no personal data and expires automatically after 2 days.
 - The default daily limit is **40 requests per user per day** (UTC). Once reached, additional requests are rejected with an HTTP 429 response until the next UTC day.
 - If `DEFAULT_PROXY_URL` is empty (the default in the source repository), the free tier is dormant — no proxy requests are made and no error is shown; AI analysis simply remains unavailable until a key is added or the owner deploys the proxy.
 
@@ -84,7 +84,7 @@ If you choose to enable AI deep analysis, the text of the reviews you analyze wi
 | Host permission: `https://www.google.com/maps/*` | Read review content on Google Maps place pages and inject genuineness badges. This is the extension's core function. |
 | Host permission: `https://api.minimax.io/*` | Allow the extension service worker to call MiniMax when AI analysis is enabled with an OpenAI-compatible (e.g., MiniMax) key. |
 | Host permission: `https://api.anthropic.com/*` | Allow the extension service worker to call Anthropic when AI analysis is enabled with an Anthropic key. |
-| Host permission: `https://*.workers.dev/*` | Allow the extension service worker to call the owner-hosted Cloudflare Worker proxy when the free shared-AI tier is active. The proxy holds the owner's API key server-side; no key is transmitted from the extension. |
+| Host permission: `https://*.on.aws/*` | Allow the extension service worker to call the owner-hosted AWS Lambda Function URL when the free shared-AI tier is active. The proxy holds the owner's API key server-side (Lambda env var); no key is transmitted from the extension. |
 
 ---
 

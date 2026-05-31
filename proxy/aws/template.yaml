@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: TruLens free-AI proxy — Lambda Function URL + DynamoDB per-user rate limiter
+
+Parameters:
+  MinimaxApiKey:
+    Type: String
+    NoEcho: true
+    Description: Your (rotated) MiniMax API key. Passed at deploy time; never stored in the repo.
+  DailyLimit:
+    Type: String
+    Default: '40'
+    Description: Free AI requests allowed per user per UTC day.
+  Model:
+    Type: String
+    Default: MiniMax-M2
+    Description: MiniMax model the proxy forces (clients cannot override).
+
+Resources:
+  RateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: exp
+        Enabled: true
+
+  ProxyFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs20.x
+      Handler: index.handler
+      CodeUri: ./
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          TABLE: !Ref RateTable
+          DAILY_LIMIT: !Ref DailyLimit
+          MODEL: !Ref Model
+          MINIMAX_API_KEY: !Ref MinimaxApiKey
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RateTable
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins: ['*']
+          AllowMethods: ['POST']
+          AllowHeaders: ['content-type', 'x-trulens-client']
+
+Outputs:
+  ProxyUrl:
+    Description: Put this into DEFAULT_PROXY_URL in src/types.ts, then rebuild the extension.
+    Value: !GetAtt ProxyFnUrl.FunctionUrl

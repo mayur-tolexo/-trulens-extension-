@@ -10,48 +10,46 @@ Step-by-step upload guide for TruLens v1.0.0. Complete every step in order.
 The current build ships as-is. AI deep analysis is dormant until a user adds their own API key in Settings. No proxy deployment required.
 
 **Option B — Free shared AI (requires proxy deployment first)**
-You host a Cloudflare Worker that holds your MiniMax key server-side. Users get up to 40 free AI analyses per day without entering a key. Continue to Step 1 if choosing this option; skip to Step 2 if choosing Option A.
+You host an AWS Lambda Function URL + DynamoDB table that holds your MiniMax key server-side. Users get up to 40 free AI analyses per day without entering a key. Continue to Step 1 if choosing this option; skip to Step 2 if choosing Option A.
 
 ---
 
-## Step 1 — (Tier B only) Deploy the Cloudflare Worker Proxy
+## Step 1 — (Tier B only) Deploy the AWS Lambda Proxy
 
 > **Security:** Use a freshly rotated MiniMax key. NEVER commit the key to the repo. If you used a key during development, rotate it now before go-live.
 
+**Prerequisites:** AWS CLI configured (`aws configure`) and AWS SAM CLI installed (`brew install aws-sam-cli` or `pip install aws-sam-cli`).
+
+**1a. Build the Lambda package:**
 ```sh
-cd proxy
-npm i -g wrangler          # install Wrangler CLI (if not already)
-wrangler login             # authenticate to Cloudflare
+cd proxy/aws
+sam build
 ```
 
-**1a. Create the KV namespace:**
+**1b. Deploy (first time — guided):**
 ```sh
-wrangler kv namespace create RL
+sam deploy --guided
 ```
-Copy the printed `id` value. Open `proxy/wrangler.toml` and replace `REPLACE_WITH_KV_ID` with it:
-```toml
-[[kv_namespaces]]
-binding = "RL"
-id = "PASTE_YOUR_ID_HERE"       # ← PLACEHOLDER: fill this in
-```
+Accept the defaults for stack name and region. When prompted for `MinimaxApiKey`, enter your fresh (rotated) MiniMax key — this parameter is `NoEcho` so it does not echo to the terminal and is **not saved** to `samconfig.toml`. Optionally change `DailyLimit` (default `40`) or `Model` (default `MiniMax-M2`). Save the config to `samconfig.toml` when asked so future deploys can skip `--guided`.
 
-**1b. Set the API key as a Cloudflare secret (never committed):**
-```sh
-wrangler secret put MINIMAX_API_KEY
-```
-Paste your fresh (rotated) MiniMax key at the prompt.
+> **Caution:** `samconfig.toml` stores your deployment parameters for convenience. Review it before committing to ensure no secrets are present. The `MinimaxApiKey` is NoEcho and will not appear there, but double-check.
 
-**1c. Deploy the Worker:**
-```sh
-wrangler deploy
+**1c. Copy the ProxyUrl output:**
+After a successful deploy, SAM prints:
 ```
-Note the deployed URL printed at the end, e.g. `https://trulens-proxy.<your-subdomain>.workers.dev`.
+ProxyUrl    https://<id>.lambda-url.<region>.on.aws/
+```
+Copy that URL.
 
 **1d. Wire the URL into the extension:**
 Open `src/types.ts` and set:
 ```typescript
-export const DEFAULT_PROXY_URL = 'https://trulens-proxy.<your-subdomain>.workers.dev';
+export const DEFAULT_PROXY_URL = 'https://<id>.lambda-url.<region>.on.aws/';
 ```
+
+For the full deploy guide (including subsequent deploys and rate-limit tuning), see [`proxy/aws/README.md`](../proxy/aws/README.md).
+
+> **Alternative:** A Cloudflare Workers deployment (`proxy/worker.ts` + `proxy/wrangler.toml`) is also available as an alternative to AWS. See [`proxy/README.md`](../proxy/README.md) for details.
 
 ---
 
@@ -87,20 +85,15 @@ Verify:
 
 ---
 
-## Step 4 — Host the Privacy Policy
+## Step 4 — Host the Privacy Policy ✅ DONE
 
-The Chrome Web Store requires a publicly accessible privacy-policy URL before submission.
+GitHub Pages is already enabled (`main` → `/docs`) and the policy is **live**:
 
-1. Push the repo to GitHub (if not already): https://github.com/mayur-tolexo/-trulens-extension-
-2. Enable GitHub Pages: **Settings → Pages → Source: Deploy from branch → `main` → `/docs`**
-3. Wait for Pages to publish (usually under 1 minute).
-4. The policy URL will be:
-   ```
-   https://<your-github-username>.github.io/<repo-name>/privacy.html
-   ```
-   > **PLACEHOLDER:** Replace `<your-github-username>` and `<repo-name>` with your actual values.
-5. Open that URL in a browser to confirm it renders.
-6. Update the `<!-- Hosted at -->` notice at the top of `docs/privacy.html` with the actual URL.
+```
+https://mayur-tolexo.github.io/-trulens-extension-/privacy.html
+```
+
+Paste that URL into the Chrome Web Store listing's "Privacy policy URL" field. (Verify it loads in an incognito window — the reviewer will visit it.)
 
 ---
 
@@ -166,10 +159,10 @@ Copy from `docs/STORE_LISTING.md` into the dashboard fields:
 | Host: `https://www.google.com/maps/*` | The extension's content script must read review text and metadata from Google Maps place pages in order to compute genuineness scores and inject shield badges beside each review. This is the extension's entire core function. |
 | Host: `https://api.minimax.io/*` | The extension's service worker calls MiniMax when the user opts into AI deep analysis with a MiniMax-compatible key (BYOK mode). No calls are made unless the user has explicitly entered a key and enabled AI analysis. |
 | Host: `https://api.anthropic.com/*` | The extension's service worker calls Anthropic when the user opts into AI deep analysis with an Anthropic key (BYOK mode). No calls are made unless the user has explicitly entered a key and enabled AI analysis. |
-| Host: `https://*.workers.dev/*` | The extension calls the owner-hosted Cloudflare Worker proxy when the free shared-AI tier is active. The proxy holds the owner's API key server-side; no key is bundled in or transmitted from the extension. Only used for POST requests to the AI proxy endpoint. |
+| Host: `https://*.on.aws/*` | The service worker calls the owner-hosted AWS Lambda Function URL when the free shared-AI tier is active. The proxy holds the owner's API key server-side (Lambda env var); no key is transmitted from the extension. Only POST requests to the proxy are made; BYOK users never trigger this permission. |
 
 **Data-usage disclosures:**
-- The extension transmits the text of user-selected review(s) — plus a small number of sibling reviews on the same page for context — to the user's chosen AI provider (BYOK) or to the owner's Cloudflare Worker proxy (free tier), solely to compute a genuineness score. No other data is collected or transmitted.
+- The extension transmits the text of user-selected review(s) — plus a small number of sibling reviews on the same page for context — to the user's chosen AI provider (BYOK) or to the owner's AWS Lambda proxy (free tier), solely to compute a genuineness score. No other data is collected or transmitted.
 - The extension does **not** collect personal data, does **not** sell data, and does **not** use data for any purpose unrelated to computing review genuineness scores.
 - The proxy stores only a per-user per-day request counter (keyed on an anonymous device UUID) for rate-limiting; it does **not** store review text.
 
@@ -208,7 +201,7 @@ Go through every item before clicking "Submit for review":
 - [ ] Single-purpose statement filled in on the Privacy practices tab
 - [ ] All five permission justifications filled in (storage + 4 host permissions)
 - [ ] No unhandled `console.error` or promise rejections on a normal page load
-- [ ] KV namespace `id` in `proxy/wrangler.toml` is set (Tier B only) — `REPLACE_WITH_KV_ID` placeholder removed
+- [ ] `samconfig.toml` reviewed — no secrets present (Tier B AWS only)
 
 ---
 
@@ -218,7 +211,7 @@ Go through every item before clicking "Submit for review":
 TruLens requests only five permissions total: `storage` and four host permissions. Each has a clear, minimal justification. If the reviewer asks for more detail:
 - The Google Maps host permission is the core function — the extension cannot read or badge reviews without it.
 - The AI API host permissions (`api.minimax.io`, `api.anthropic.com`) are only triggered when the user has explicitly opted in and supplied their own API key. No requests are made otherwise.
-- The `*.workers.dev` host permission covers the optional owner-hosted proxy for the free shared-AI tier. It is only used for POST requests to the AI endpoint; users on BYOK mode never trigger it. The proxy holds the owner's API key server-side — no key is shipped in the extension bundle.
+- The `*.on.aws` host permission covers the optional owner-hosted AWS Lambda Function URL proxy for the free shared-AI tier. It is only used for POST requests to the AI endpoint; users on BYOK mode never trigger it. The proxy holds the owner's API key as a Lambda environment variable — no key is shipped in the extension bundle.
 
 ### Remote code execution
 TruLens uses none. All logic is bundled at build time (Manifest V3). No `eval`, no `Function()` from strings, no dynamically loaded scripts. State this clearly if questioned.
@@ -240,4 +233,5 @@ Screenshots must show the actual running extension on real pages, not mock-ups o
 - Chrome Web Store Developer Program Policies: https://developer.chrome.com/docs/webstore/program-policies/
 - Manifest V3 overview: https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3
 - GitHub Pages setup: https://docs.github.com/en/pages/getting-started-with-github-pages
-- Wrangler (Cloudflare Workers CLI): https://developers.cloudflare.com/workers/wrangler/
+- AWS SAM CLI install: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
+- AWS Lambda Function URLs: https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html
