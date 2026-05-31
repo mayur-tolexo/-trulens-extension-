@@ -1,0 +1,7 @@
+{
+  "name": "trulens-proxy",
+  "version": "1.0.0",
+  "description": "TruLens free-AI proxy Lambda (uses the AWS SDK bundled in the Node 20 runtime; no dependencies to install).",
+  "type": "module",
+  "private": true
+}
