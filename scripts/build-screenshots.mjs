@@ -16,12 +16,12 @@ mkdirSync(p('../store-assets/screenshots/'), { recursive: true });
 // stars); the last two show the OLD half-star glyph and are best re-captured
 // after reloading the fixed build.
 const SHOTS = [
-  { key: '12.31.08', title: 'Instant trust score for every place', sub: 'See how genuine the reviews really are — at a glance.' },
-  { key: '12.31.49', title: 'Every review, scored right inline', sub: 'Green = genuine · amber = mixed · red = fake.' },
-  { key: '12.31.24', title: 'AI-checked verdicts on real reviews', sub: 'Spot fake or incentivized reviews in seconds.' },
-  { key: '12.44.02', title: 'Free to use. Private by design.', sub: 'On-device scoring; add your own AI key for unlimited.' },
-  { key: '12.31.58', title: 'Your trust summary in one click', sub: 'Score, verdict and a genuine / mixed / fake breakdown.' },
-  { key: '12.30.49', title: 'Know which reviews to trust', sub: 'A clear genuineness score for the whole place.' },
+  { key: '12.51.51', title: 'Instant trust score for every place', sub: 'See how genuine the reviews really are — at a glance.' },
+  { key: '12.52.14', title: 'Catches fake & paid reviews', sub: 'Red flags suspicious reviews; green confirms the genuine ones.' },
+  { key: '12.52.31', title: 'Every review, scored right inline', sub: 'A genuineness badge on each Google Maps review.' },
+  { key: '12.51.58', title: 'Your trust summary in one click', sub: 'Score, verdict and a genuine / mixed / fake breakdown.' },
+  { key: '12.52.04', title: 'Free to use. Private by design.', sub: 'On-device scoring; add your own AI key for unlimited.' },
+  { key: '12.52.24', title: 'Right inside Google Maps', sub: 'No extra tabs — TruLens works where you already browse.' },
 ];
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

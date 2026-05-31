@@ -92,13 +92,13 @@ Upload in this order:
 | # | File | Shows |
 |---|---|---|
 | 1 | `01-store.png` | On-page trust panel — instant score, verdict, 5-star, breakdown bar. **(hero)** |
-| 2 | `02-store.png` | Inline genuineness badges on individual Google Maps reviews. |
-| 3 | `03-store.png` | An AI-checked verdict badge on a real review. |
-| 4 | `04-store.png` | Settings — free shared AI + bring-your-own-key, privacy note. |
-| 5 | `05-store.png` | Toolbar popup trust summary. *(Re-capture after reloading the latest build — earlier capture shows the old half-star glyph.)* |
-| 6 | `06-store.png` | Compact panel with genuineness score. *(Same half-star re-capture note.)* |
+| 2 | `02-store.png` | Red "Likely fake" badges flagging suspicious 5-star reviews. **(differentiator)** |
+| 3 | `03-store.png` | A green "Likely genuine" badge on a real review. |
+| 4 | `04-store.png` | Toolbar popup trust summary (gauge, verdict, breakdown). |
+| 5 | `05-store.png` | Settings — free shared AI + bring-your-own-key, privacy note. |
+| 6 | `06-store.png` | TruLens in context, right inside Google Maps. |
 
-The Chrome Web Store accepts up to **5** screenshots — use 1–4 (all clean) plus a re-captured 5. Source captures live in `./screenshots/`; rerun `npm run screenshots` after adding new ones.
+The Chrome Web Store accepts up to **5** screenshots — recommended order is 1, 2, 4, 3, 5 (drop 6 if limited to five). All are clean. Source captures live in `./screenshots/`; rerun `npm run screenshots` after adding new ones.
 
 > Screenshots are framed from real captures of the running extension on a live Google Maps page — they reflect actual behaviour, which the store requires.
 
