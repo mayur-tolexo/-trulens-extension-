@@ -29,6 +29,23 @@ describe('buildRequest', () => {
     const r = buildRequest(review, [], s({ providerMode: 'proxy', proxyUrl: 'https://proxy.test/analyze' }));
     expect(r.url).toBe('https://proxy.test/analyze');
   });
+  it('proxy: adds x-trulens-client header when clientHeader is passed', () => {
+    const r = buildRequest(review, [], s({ providerMode: 'proxy', proxyUrl: 'https://proxy.test/analyze' }), 'test-client-id-123');
+    expect(r.url).toBe('https://proxy.test/analyze');
+    expect(r.headers['x-trulens-client']).toBe('test-client-id-123');
+    expect(r.headers['content-type']).toBe('application/json');
+  });
+  it('proxy: omits x-trulens-client header when clientHeader is not passed', () => {
+    const r = buildRequest(review, [], s({ providerMode: 'proxy', proxyUrl: 'https://proxy.test/analyze' }));
+    expect(r.headers['x-trulens-client']).toBeUndefined();
+  });
+  it('proxy: body uses OpenAI shape with messages array', () => {
+    const r = buildRequest(review, [], s({ providerMode: 'proxy', proxyUrl: 'https://proxy.test/analyze' }), 'cid');
+    const body = JSON.parse(r.body);
+    expect(Array.isArray(body.messages)).toBe(true);
+    expect(body.messages[0].role).toBe('user');
+    expect(typeof body.messages[0].content).toBe('string');
+  });
   it('anthropic: custom baseUrl (MiniMax) builds /v1/messages with Bearer auth', () => {
     const r = buildRequest(review, [], s({ providerMode: 'anthropic', baseUrl: 'https://api.minimax.io/anthropic', apiKey: 'mk', model: 'MiniMax-M2.7' }));
     expect(r.url).toBe('https://api.minimax.io/anthropic/v1/messages');
@@ -60,9 +77,14 @@ describe('extractText', () => {
   it('reads OpenAI shape', () => {
     expect(extractText('openai-compatible', { choices: [{ message: { content: 'hi' } }] })).toBe('hi');
   });
-  it('reads Anthropic shape', () => {
+  it('reads Anthropic shape for anthropic mode', () => {
     expect(extractText('anthropic', { content: [{ text: 'hi' }] })).toBe('hi');
-    expect(extractText('proxy', { content: [{ text: 'hi' }] })).toBe('hi');
+  });
+  it('proxy mode reads OpenAI shape (choices[0].message.content)', () => {
+    expect(extractText('proxy', { choices: [{ message: { content: 'hi' } }] })).toBe('hi');
+  });
+  it('proxy mode strips <think> blocks', () => {
+    expect(extractText('proxy', { choices: [{ message: { content: '<think>thinking</think>result' } }] })).toBe('result');
   });
   it('strips <think> blocks from OpenAI reasoning-model content', () => {
     const out = extractText('openai-compatible', { choices: [{ message: { content: '<think>let me think</think>\n```json\n{"score":80}\n```' } }] });

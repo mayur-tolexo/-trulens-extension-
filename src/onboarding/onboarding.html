@@ -44,46 +44,56 @@
       </div>
     </section>
 
-    <!-- AI setup (optional) -->
+    <!-- AI setup -->
     <section class="ob-section">
-      <h2 class="ob-section-heading">Enable AI analysis <span class="ob-optional-badge">optional</span></h2>
-      <p class="ob-section-sub">Instant scoring works without any key. Add a key below only if you want deeper AI verdicts.</p>
+      <h2 class="ob-section-heading">AI analysis</h2>
+      <p class="ob-section-sub">AI is on by default using a free shared tier (limited per day). For unlimited analysis, add your own API key.</p>
 
       <div class="ob-form">
         <div class="ob-field">
           <label class="ob-label" for="providerMode">Provider</label>
           <select id="providerMode" class="ob-select">
-            <option value="anthropic">Anthropic-compatible (Anthropic, MiniMax)</option>
-            <option value="openai-compatible" selected>OpenAI-compatible (MiniMax, OpenAI…)</option>
+            <option value="proxy" selected>Free shared AI (no key needed)</option>
+            <option value="openai-compatible">My OpenAI-compatible key (MiniMax/OpenAI)</option>
+            <option value="anthropic">My Anthropic key</option>
           </select>
         </div>
 
-        <div class="ob-field">
-          <label class="ob-label" for="baseUrl">Base URL</label>
-          <input type="text" id="baseUrl" class="ob-input" placeholder="https://api.minimax.io/v1">
+        <!-- Proxy URL field: shown only in proxy mode -->
+        <div class="ob-field" id="proxy-url-field" style="display:none">
+          <label class="ob-label" for="proxyUrl">Proxy URL</label>
+          <input type="text" id="proxyUrl" class="ob-input" placeholder="https://trulens-proxy.xxx.workers.dev">
         </div>
 
-        <div class="ob-field">
-          <label class="ob-label" for="model">Model</label>
-          <input type="text" id="model" class="ob-input" placeholder="MiniMax-M2">
-        </div>
+        <!-- BYOK fields: hidden in proxy mode -->
+        <div id="byok-fields">
+          <div class="ob-field">
+            <label class="ob-label" for="baseUrl">Base URL</label>
+            <input type="text" id="baseUrl" class="ob-input" placeholder="https://api.minimax.io/v1">
+          </div>
 
-        <div class="ob-field">
-          <label class="ob-label" for="apiKey">API Key</label>
-          <input type="password" id="apiKey" class="ob-input" placeholder="Paste your key here…" autocomplete="off">
-        </div>
+          <div class="ob-field">
+            <label class="ob-label" for="model">Model</label>
+            <input type="text" id="model" class="ob-input" placeholder="MiniMax-M2">
+          </div>
 
-        <p class="ob-key-note">
-          Your key is stored only in your browser and sent exclusively to the provider you choose.
-          <a href="https://platform.minimax.io/" target="_blank" rel="noopener noreferrer" class="ob-link">Get a free MiniMax key</a>.
-        </p>
+          <div class="ob-field">
+            <label class="ob-label" for="apiKey">API Key</label>
+            <input type="password" id="apiKey" class="ob-input" placeholder="Paste your key here…" autocomplete="off">
+          </div>
+
+          <p class="ob-key-note">
+            Your key is stored only in your browser and sent exclusively to the provider you choose.
+            <a href="https://platform.minimax.io/" target="_blank" rel="noopener noreferrer" class="ob-link">Get a free MiniMax key</a>.
+          </p>
+        </div>
 
         <div class="ob-test-row">
           <button type="button" id="test-btn" class="ob-test-btn">Test connection</button>
           <span id="test-status" class="ob-test-status"></span>
         </div>
 
-        <p class="ob-skip-note">You can skip this step and add a key later from the toolbar popup.</p>
+        <p class="ob-skip-note">You can change these settings any time from the toolbar popup.</p>
       </div>
     </section>
 

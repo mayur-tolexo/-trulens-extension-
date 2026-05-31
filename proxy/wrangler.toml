@@ -1,0 +1,11 @@
+name = "trulens-proxy"
+main = "worker.ts"
+compatibility_date = "2024-11-01"
+
+[vars]
+DAILY_LIMIT = "40"
+# MODEL = "MiniMax-M2"
+
+[[kv_namespaces]]
+binding = "RL"
+id = "REPLACE_WITH_KV_ID"

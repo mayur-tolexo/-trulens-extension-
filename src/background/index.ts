@@ -22,7 +22,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           else toRun.push(rv);
         }
         if (toRun.length) {
-          const results = await runBatchAnalysis(toRun, msg.siblings ?? []);
+          let results: any[];
+          try {
+            results = await runBatchAnalysis(toRun, msg.siblings ?? []);
+          } catch (e) {
+            if ((e as Error).message === 'quota') return sendResponse({ ok: false, error: 'quota' });
+            throw e;
+          }
           for (let i = 0; i < toRun.length; i++) {
             const r = results[i] ?? { score: 50, verdict: 'mixed', reasoning: '' };
             await setCached(toRun[i].text, r);
@@ -34,7 +40,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       if (msg.type === 'deepAnalysis') {
         const cached = await getCached(msg.review.text);
         if (cached) return sendResponse({ ok: true, result: cached, cached: true });
-        const result = await runDeepAnalysis(msg.review, msg.siblings ?? []);
+        let result: any;
+        try {
+          result = await runDeepAnalysis(msg.review, msg.siblings ?? []);
+        } catch (e) {
+          if ((e as Error).message === 'quota') return sendResponse({ ok: false, error: 'quota' });
+          throw e;
+        }
         await setCached(msg.review.text, result);
         return sendResponse({ ok: true, result });
       }

@@ -27,6 +27,10 @@ When both conditions are met and you click "Deep analysis" on a specific review,
 
 TruLens itself has no server. It does not act as a middleman for these API calls; the request goes from your browser directly to your chosen provider.
 
+### Free shared-AI tier (proxy mode)
+
+When the extension owner has deployed the included Cloudflare Worker proxy and set `DEFAULT_PROXY_URL`, the default provider mode is `proxy`. In this mode, review text is sent from your browser to the **owner's Cloudflare Worker** (not directly to MiniMax). The Worker forwards the request to MiniMax using the owner's server-side API key. **The owner's API key is never transmitted to your browser or included in the extension bundle.** The proxy does not log or store the review text; it only records a per-user per-day request count (keyed on an anonymous device UUID) in a Cloudflare KV namespace for rate-limiting purposes. No personal data is stored.
+
 ---
 
 ## What Is Stored Locally

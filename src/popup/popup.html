@@ -37,10 +37,10 @@
     </div>
   </header>
 
-  <!-- AI status hint (shown when no API key is configured) -->
+  <!-- AI status hint (shown when AI isn't configured yet) -->
   <div class="tl-ai-hint" id="ai-hint">
     <span>⚡</span>
-    <span>Instant on-device scoring is on. For sharper <b>AI verdicts</b>, add an API key in Settings below. <a id="get-key-link" href="https://platform.minimax.io/" target="_blank" rel="noopener">Get a free key</a>.</span>
+    <span>Using free shared AI (limited daily). Want unlimited? Pick 'My …key' and paste a key. <a id="get-key-link" href="https://platform.minimax.io/" target="_blank" rel="noopener">Get a free key</a>.</span>
   </div>
 
   <!-- Trust Summary -->
@@ -152,24 +152,33 @@
       <div class="tl-setting-row">
         <span class="tl-setting-label">Source</span>
         <select id="providerMode">
-          <option value="anthropic">Anthropic-compatible (Anthropic, MiniMax)</option>
-          <option value="openai-compatible">OpenAI-compatible (MiniMax, OpenAI…)</option>
+          <option value="proxy">Free shared AI (no key needed)</option>
+          <option value="openai-compatible">My OpenAI-compatible key (MiniMax/OpenAI)</option>
+          <option value="anthropic">My Anthropic key</option>
         </select>
       </div>
-      <div class="tl-setting-row">
-        <span class="tl-setting-label">Base URL</span>
-        <input type="text" id="baseUrl" placeholder="https://api.minimax.io/anthropic  or  https://api.minimax.io/v1">
+      <!-- Proxy URL row (shown only in proxy mode) -->
+      <div class="tl-setting-row" id="proxy-url-row" style="display:none">
+        <span class="tl-setting-label">Proxy URL</span>
+        <input type="text" id="proxyUrl" placeholder="https://trulens-proxy.xxx.workers.dev">
       </div>
-      <div class="tl-setting-row">
-        <span class="tl-setting-label">Model</span>
-        <input type="text" id="model" placeholder="MiniMax-M2.7 / claude-sonnet-4-6">
+      <!-- BYOK rows: hidden in proxy mode -->
+      <div id="byok-rows">
+        <div class="tl-setting-row">
+          <span class="tl-setting-label">Base URL</span>
+          <input type="text" id="baseUrl" placeholder="https://api.minimax.io/anthropic  or  https://api.minimax.io/v1">
+        </div>
+        <div class="tl-setting-row">
+          <span class="tl-setting-label">Model</span>
+          <input type="text" id="model" placeholder="MiniMax-M2.7 / claude-sonnet-4-6">
+        </div>
+        <div class="tl-setting-row">
+          <span class="tl-setting-label">API Key</span>
+          <input type="password" id="apiKey" placeholder="paste your key…" autocomplete="off">
+        </div>
+        <p class="tl-key-help">Stored only in your browser; sent only to the provider you choose, only when you run AI analysis.</p>
+        <p class="tl-key-help">Changes apply after you reload the page.</p>
       </div>
-      <div class="tl-setting-row">
-        <span class="tl-setting-label">API Key</span>
-        <input type="password" id="apiKey" placeholder="paste your key…" autocomplete="off">
-      </div>
-      <p class="tl-key-help">Stored only in your browser; sent only to the provider you choose, only when you run AI analysis.</p>
-      <p class="tl-key-help">Changes apply after you reload the page.</p>
       <div class="tl-test-row">
         <button type="button" id="test-btn" class="tl-test-btn">Test connection</button>
         <span id="test-status" class="tl-test-status"></span>

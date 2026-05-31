@@ -25,7 +25,7 @@ function send<T = any>(msg: any): Promise<T | undefined> {
 const PRESETS: Record<string, { baseUrl: string; model: string }> = {
   'openai-compatible': { baseUrl: 'https://api.minimax.io/v1',        model: 'MiniMax-M2' },
   'anthropic':         { baseUrl: 'https://api.minimax.io/anthropic', model: 'MiniMax-M2.7' },
-  'proxy':             { baseUrl: '',                                  model: 'claude-sonnet-4-6' },
+  'proxy':             { baseUrl: '',                                  model: '' },
 };
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
@@ -34,14 +34,31 @@ function el<T extends HTMLElement>(id: string): T {
   return document.getElementById(id) as T;
 }
 
+// ── Toggle field visibility based on provider mode ────────────────────────────
+
+function toggleProviderFields(): void {
+  const mode = el<HTMLSelectElement>('providerMode').value;
+  const byokFields = document.getElementById('byok-fields') as HTMLElement;
+  const proxyUrlField = document.getElementById('proxy-url-field') as HTMLElement;
+  if (mode === 'proxy') {
+    byokFields.style.display = 'none';
+    proxyUrlField.style.display = '';
+  } else {
+    byokFields.style.display = '';
+    proxyUrlField.style.display = 'none';
+  }
+}
+
 // ── Persist settings on change ────────────────────────────────────────────────
 
 async function saveSettings(): Promise<void> {
+  const proxyUrlEl = document.getElementById('proxyUrl') as HTMLInputElement | null;
   const patch: Partial<Settings> = {
     providerMode: (el<HTMLSelectElement>('providerMode')).value as Settings['providerMode'],
     baseUrl:      (el<HTMLInputElement>('baseUrl')).value,
     model:        (el<HTMLInputElement>('model')).value,
     apiKey:       (el<HTMLInputElement>('apiKey')).value,
+    proxyUrl:     proxyUrlEl?.value ?? '',
   };
   await send({ type: 'setSettings', patch });
 }
@@ -57,6 +74,11 @@ async function loadSettings(): Promise<void> {
   (el<HTMLInputElement>('baseUrl')).value       = s.baseUrl;
   (el<HTMLInputElement>('model')).value         = s.model;
   (el<HTMLInputElement>('apiKey')).value        = s.apiKey;
+
+  const proxyUrlEl = document.getElementById('proxyUrl') as HTMLInputElement | null;
+  if (proxyUrlEl) proxyUrlEl.value = s.proxyUrl ?? '';
+
+  toggleProviderFields();
 }
 
 // ── Wire provider select → prefill presets ────────────────────────────────────
@@ -64,6 +86,7 @@ async function loadSettings(): Promise<void> {
 function wireProviderSelect(): void {
   const providerSel = el<HTMLSelectElement>('providerMode');
   providerSel.addEventListener('change', () => {
+    toggleProviderFields();
     const preset = PRESETS[providerSel.value];
     if (preset) {
       (el<HTMLInputElement>('baseUrl')).value = preset.baseUrl;
@@ -76,9 +99,10 @@ function wireProviderSelect(): void {
 // ── Wire field change → persist ───────────────────────────────────────────────
 
 function wireFieldSave(): void {
-  const ids = ['baseUrl', 'model', 'apiKey'] as const;
+  const ids = ['baseUrl', 'model', 'apiKey', 'proxyUrl'] as const;
   for (const id of ids) {
-    el(id).addEventListener('change', saveSettings);
+    const elem = document.getElementById(id);
+    if (elem) elem.addEventListener('change', saveSettings);
   }
 }
 

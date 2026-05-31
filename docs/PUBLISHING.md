@@ -129,6 +129,7 @@ Click **"Submit for review"**. The extension will enter the review queue.
 TruLens requests a host permission for Google Maps (to inject badges) and for AI provider APIs (to make direct calls from the service worker). Each permission has a one-line justification in `docs/STORE_LISTING.md`. If the reviewer requests more detail, emphasize:
 - The Google Maps permission is the extension's core function — it cannot read or badge reviews without access to that page.
 - The AI API permissions are only ever used when the user has explicitly opted in and supplied their own API key; no calls are made otherwise.
+- The `*.workers.dev` permission is for the optional owner-hosted Cloudflare Worker proxy that provides the free shared-AI tier. It is used only when `providerMode` is `proxy` and only for POST requests to the chat-completions endpoint. Users who opt into BYOK mode never trigger this permission. The proxy holds the owner's API key server-side; no key is transmitted from the extension bundle.
 
 ### Remote code execution
 TruLens uses none. All logic is bundled at build time (Manifest V3, no `eval`, no `Function()` from strings, no dynamically loaded scripts). State this clearly if questioned.
@@ -162,6 +163,7 @@ Go through every item before clicking "Submit for review":
 - [ ] All permission justifications are filled in
 - [ ] No `console.error` or unhandled promise rejections appear in the browser console on a normal page load
 - [ ] AI analysis is disabled by default (verified on a fresh extension install)
+- [ ] If the shared-AI proxy is deployed, `DEFAULT_PROXY_URL` in `src/types.ts` is set to the deployed URL and `npm run build` has been re-run
 - [ ] Contact email in `PRIVACY.md` and `docs/privacy.html` has been updated to the real address
 - [ ] Data-use disclosure checkboxes match the actual behaviour described above
 

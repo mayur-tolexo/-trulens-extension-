@@ -133,18 +133,37 @@ async function loadSettings() {
   (document.getElementById('apiKey')       as HTMLInputElement).value   = s.apiKey;
   (document.getElementById('baseUrl')      as HTMLInputElement).value   = s.baseUrl;
   (document.getElementById('model')        as HTMLInputElement).value   = s.model;
+  (document.getElementById('proxyUrl')     as HTMLInputElement).value   = s.proxyUrl ?? '';
 
-  // Show the "add a key" hint when AI isn't configured yet.
-  const configured = s.providerMode === 'proxy' ? !!s.proxyUrl : !!s.apiKey;
-  (document.getElementById('ai-hint') as HTMLElement).style.display = configured ? 'none' : 'flex';
+  toggleProviderFields();
+
+  // Show the "add a key" hint when AI isn't properly configured.
+  // proxy mode: show hint when no proxyUrl set (AI is dormant)
+  // BYOK mode: show hint when no apiKey set
+  const needsSetup = s.providerMode === 'proxy' ? !s.proxyUrl : !s.apiKey;
+  (document.getElementById('ai-hint') as HTMLElement).style.display = needsSetup ? 'flex' : 'none';
 }
 
 // Picking a provider auto-fills sensible base URL + model so it works out of the box.
 const PRESETS: Record<string, { baseUrl: string; model: string }> = {
   'openai-compatible': { baseUrl: 'https://api.minimax.io/v1',        model: 'MiniMax-M2' },
   'anthropic':         { baseUrl: 'https://api.minimax.io/anthropic', model: 'MiniMax-M2.7' },
-  'proxy':             { baseUrl: '',                                 model: 'claude-sonnet-4-6' },
+  'proxy':             { baseUrl: '',                                  model: '' },
 };
+
+/** Show/hide BYOK rows and the proxy URL row depending on current provider mode. */
+function toggleProviderFields() {
+  const mode = (document.getElementById('providerMode') as HTMLSelectElement).value;
+  const byokRows = document.getElementById('byok-rows') as HTMLElement;
+  const proxyUrlRow = document.getElementById('proxy-url-row') as HTMLElement;
+  if (mode === 'proxy') {
+    byokRows.style.display = 'none';
+    proxyUrlRow.style.display = '';
+  } else {
+    byokRows.style.display = '';
+    proxyUrlRow.style.display = 'none';
+  }
+}
 
 async function saveSettings() {
   await send({
@@ -158,9 +177,10 @@ async function saveSettings() {
         googleMaps: (document.getElementById('googleMaps') as HTMLInputElement).checked,
       },
       providerMode: (document.getElementById('providerMode') as HTMLSelectElement).value as Settings['providerMode'],
-      apiKey:   (document.getElementById('apiKey')   as HTMLInputElement).value,
-      baseUrl:  (document.getElementById('baseUrl')  as HTMLInputElement).value,
-      model:    (document.getElementById('model')    as HTMLInputElement).value,
+      apiKey:    (document.getElementById('apiKey')    as HTMLInputElement).value,
+      baseUrl:   (document.getElementById('baseUrl')   as HTMLInputElement).value,
+      model:     (document.getElementById('model')     as HTMLInputElement).value,
+      proxyUrl:  (document.getElementById('proxyUrl')  as HTMLInputElement).value,
     },
   });
 }
@@ -168,15 +188,16 @@ async function saveSettings() {
 function wireSettings() {
   document.querySelectorAll('input, select:not(#providerMode)').forEach((el) => el.addEventListener('change', saveSettings));
 
-  // On provider change, apply the preset base URL + model, then save.
+  // On provider change, toggle field visibility, apply the preset base URL + model, then save.
   const providerSel = document.getElementById('providerMode') as HTMLSelectElement;
   providerSel.addEventListener('change', () => {
+    toggleProviderFields();
     const preset = PRESETS[providerSel.value];
-    if (preset) {
+    if (preset && preset.baseUrl !== undefined) {
       (document.getElementById('baseUrl') as HTMLInputElement).value = preset.baseUrl;
       (document.getElementById('model')   as HTMLInputElement).value = preset.model;
-      saveSettings();
     }
+    saveSettings();
   });
 }
 

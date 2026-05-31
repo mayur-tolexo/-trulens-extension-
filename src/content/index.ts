@@ -277,6 +277,8 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
             // Also upgrade the inline badge
             renderFor(f.review.id, updated);
             refresh();
+          } else if (resp?.error === 'quota') {
+            showDeepResult('Free AI limit reached — add your own key in Settings.');
           } else {
             showDeepResult('Deep analysis unavailable.');
           }

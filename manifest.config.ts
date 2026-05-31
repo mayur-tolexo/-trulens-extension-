@@ -23,7 +23,9 @@ export default defineManifest({
     'https://www.google.com/maps/*',
     // LLM endpoints — needed so the service worker fetch bypasses CORS
     'https://api.minimax.io/*',
-    'https://api.anthropic.com/*'
+    'https://api.anthropic.com/*',
+    // Cloudflare Worker proxy — for the optional free shared-AI tier
+    'https://*.workers.dev/*',
   ],
   // NOTE: content_scripts are injected post-build as a self-contained IIFE by
   // scripts/build-content.mjs. CRXJS's loader uses a dynamic import() that

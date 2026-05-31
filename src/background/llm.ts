@@ -2,6 +2,18 @@ import type { Review, DeepAnalysisResult, Settings, ProviderMode } from '../type
 import { getSettings } from './settings';
 import { verdictFor } from '../scoring-core/score';
 
+/** Returns a stable anonymous per-device UUID for rate-limit tracking.
+ *  Creates and persists one on first call; never contains any personal data. */
+async function clientId(): Promise<string> {
+  const o = await chrome.storage.local.get('clientId');
+  if (o.clientId) return o.clientId as string;
+  const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : String(Date.now()) + Math.random();
+  await chrome.storage.local.set({ clientId: id });
+  return id;
+}
+
 const PROMPT = (r: Review, siblings: Review[]) => {
   const ctx: string[] = [];
   if (r.verifiedPurchase === true) ctx.push('verified purchase');
@@ -34,7 +46,7 @@ Be fair to the business; do not penalize a genuine positive or negative review. 
 
 export interface LlmRequest { url: string; headers: Record<string, string>; body: string; }
 
-export function buildRequest(review: Review, siblings: Review[], s: Settings): LlmRequest {
+export function buildRequest(review: Review, siblings: Review[], s: Settings, clientHeader?: string): LlmRequest {
   const content = PROMPT(review, siblings);
   const model = s.model || 'claude-sonnet-4-6';
   if (s.providerMode === 'openai-compatible') {
@@ -57,10 +69,12 @@ export function buildRequest(review: Review, siblings: Review[], s: Settings): L
       body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: 'user', content }] })
     };
   }
-  // proxy (default): proxy forwards an Anthropic-style body server-side
+  // proxy mode: POST OpenAI-style body; add client id header for rate limiting
+  const proxyHeaders: Record<string, string> = { 'content-type': 'application/json' };
+  if (clientHeader) proxyHeaders['x-trulens-client'] = clientHeader;
   return {
     url: s.proxyUrl,
-    headers: { 'content-type': 'application/json' },
+    headers: proxyHeaders,
     body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: 'user', content }] })
   };
 }
@@ -71,11 +85,10 @@ function stripThink(s: string): string {
 }
 
 export function extractText(mode: ProviderMode, json: any): string {
-  if (mode === 'openai-compatible') {
+  if (mode === 'openai-compatible' || mode === 'proxy') {
     return stripThink(json?.choices?.[0]?.message?.content ?? '');
   }
-  // anthropic / proxy: reasoning models put a 'thinking' block first, then a 'text'
-  // block — pick the text block, not content[0].
+  // anthropic: reasoning models put a 'thinking' block first, then a 'text' block
   const blocks = json?.content;
   if (Array.isArray(blocks)) {
     const textBlock = blocks.find((b: any) => b?.type === 'text' && typeof b?.text === 'string');
@@ -97,8 +110,10 @@ export function parseResult(raw: string): DeepAnalysisResult {
 
 export async function runDeepAnalysis(review: Review, siblings: Review[]): Promise<DeepAnalysisResult> {
   const s = await getSettings();
-  const req = buildRequest(review, siblings, s);
+  const cid = s.providerMode === 'proxy' ? await clientId() : undefined;
+  const req = buildRequest(review, siblings, s, cid);
   const res = await fetch(req.url, { method: 'POST', headers: req.headers, body: req.body });
+  if (res.status === 429) throw new Error('quota');
   if (!res.ok) throw new Error(`LLM ${res.status}`);
   const json = await res.json();
   return parseResult(extractText(s.providerMode, json));
@@ -127,7 +142,7 @@ Return ONLY a JSON array, one object per review in order, no prose:
 [{"i":1,"score":<0-100>,"reasoning":"<one short sentence>"}, ...]`;
 };
 
-export function buildBatchRequest(reviews: Review[], siblings: Review[], s: Settings): LlmRequest {
+export function buildBatchRequest(reviews: Review[], siblings: Review[], s: Settings, clientHeader?: string): LlmRequest {
   const content = BATCH_PROMPT(reviews, siblings);
   const model = s.model || 'claude-sonnet-4-6';
   const max_tokens = Math.min(8000, 700 + reviews.length * 320);
@@ -143,7 +158,10 @@ export function buildBatchRequest(reviews: Review[], siblings: Review[], s: Sett
       : { 'content-type': 'application/json', 'authorization': `Bearer ${s.apiKey}`, 'anthropic-version': '2023-06-01' };
     return { url: `${baseU}/v1/messages`, headers: batchAnthropicHeaders, body: JSON.stringify({ model, max_tokens, messages: [{ role: 'user', content }] }) };
   }
-  return { url: s.proxyUrl, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model, max_tokens, messages: [{ role: 'user', content }] }) };
+  // proxy mode
+  const batchProxyHeaders: Record<string, string> = { 'content-type': 'application/json' };
+  if (clientHeader) batchProxyHeaders['x-trulens-client'] = clientHeader;
+  return { url: s.proxyUrl, headers: batchProxyHeaders, body: JSON.stringify({ model, max_tokens, messages: [{ role: 'user', content }] }) };
 }
 
 export function parseBatch(raw: string, n: number): DeepAnalysisResult[] {
@@ -162,8 +180,10 @@ export function parseBatch(raw: string, n: number): DeepAnalysisResult[] {
 
 export async function runBatchAnalysis(reviews: Review[], siblings: Review[]): Promise<DeepAnalysisResult[]> {
   const s = await getSettings();
-  const req = buildBatchRequest(reviews, siblings, s);
+  const cid = s.providerMode === 'proxy' ? await clientId() : undefined;
+  const req = buildBatchRequest(reviews, siblings, s, cid);
   const res = await fetch(req.url, { method: 'POST', headers: req.headers, body: req.body });
+  if (res.status === 429) throw new Error('quota');
   if (!res.ok) throw new Error(`LLM ${res.status}`);
   const json = await res.json();
   return parseBatch(extractText(s.providerMode, json), reviews.length);
@@ -183,12 +203,16 @@ export async function testConnection(): Promise<TestResult> {
   const s = await getSettings();
   if (s.providerMode !== 'proxy' && !s.apiKey) return { ok: false, error: 'No API key set.' };
   if (s.providerMode === 'openai-compatible' && !s.baseUrl) return { ok: false, error: 'Base URL is required for OpenAI-compatible mode.' };
-  const req = buildRequest(SAMPLE_REVIEW, [], s);
+  const cid = s.providerMode === 'proxy' ? await clientId() : undefined;
+  const req = buildRequest(SAMPLE_REVIEW, [], s, cid);
   let res: Response;
   try {
     res = await fetch(req.url, { method: 'POST', headers: req.headers, body: req.body });
   } catch (e) {
     return { ok: false, error: `Network/CORS error: ${(e as Error).message}` };
+  }
+  if (res.status === 429) {
+    return { ok: false, error: 'Free daily AI limit reached — add your own API key for unlimited use.' };
   }
   if (!res.ok) {
     const body = await res.text().catch(() => '');

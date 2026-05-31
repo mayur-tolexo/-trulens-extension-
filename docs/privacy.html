@@ -164,6 +164,9 @@
     <p>When both conditions are met and you click "Deep analysis" on a specific review, TruLens will send the text of that review &mdash; plus a small number of sibling reviews from the same page to provide context &mdash; <strong>directly from your browser to the API endpoint of the provider you chose</strong>. The request is authenticated with the API key you supplied. TruLens itself is not a middleman; no review text passes through any TruLens server.</p>
     <p><strong>No review text is sent anywhere if AI analysis is disabled or if you have not entered an API key.</strong></p>
 
+    <h3>Free shared-AI tier (proxy mode)</h3>
+    <p>When the extension owner has deployed the included Cloudflare Worker proxy, the default provider mode is <em>proxy</em>. In this mode, review text is sent from your browser to the <strong>owner's Cloudflare Worker</strong> (not directly to MiniMax). The Worker forwards the request to MiniMax using the owner's server-side API key. The owner's API key is never transmitted to your browser or included in the extension bundle. The proxy does not log or store review text; it only records a per-user per-day request count (keyed on an anonymous device UUID) in a Cloudflare KV namespace for rate-limiting purposes. No personal data is stored.</p>
+
     <h2>What Is Stored Locally</h2>
     <p>TruLens uses <code>chrome.storage.local</code> (browser-local extension storage) to persist:</p>
     <ul>
@@ -219,6 +222,10 @@
         <tr>
           <td><code>openrouter.ai</code></td>
           <td>Allow the extension service worker to call OpenRouter directly when AI analysis is enabled with an OpenRouter key.</td>
+        </tr>
+        <tr>
+          <td><code>*.workers.dev</code></td>
+          <td>Allow the extension service worker to call the owner-hosted Cloudflare Worker proxy when the free shared-AI tier is active. The proxy holds the owner's API key server-side; no key is transmitted from the extension.</td>
         </tr>
       </tbody>
     </table>

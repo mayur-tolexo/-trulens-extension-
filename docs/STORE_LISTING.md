@@ -33,6 +33,9 @@ An on-page panel and the toolbar popup both display an overall trust gauge, a pl
 **Optional AI deep analysis**
 Want a sharper verdict? Enable the optional AI deep-analysis feature — bring your own API key for MiniMax (free tier available), OpenAI, or Anthropic — and get a more detailed per-review reasoning. The feature is off by default; you're in full control.
 
+**Free shared AI tier (optional)**
+TruLens ships with a built-in free shared-AI tier. When the extension owner has deployed the included Cloudflare Worker proxy, AI deep analysis works out of the box with no API key required — subject to a daily rate limit. For unlimited analysis, switch to "My own key" mode in Settings and enter your own MiniMax or Anthropic API key.
+
 **Completely private by design**
 The heuristic scoring engine runs 100 % inside your browser. No data, review text, page content, or browsing history is ever sent anywhere for the local scoring. When AI analysis is enabled, the review text goes directly from your browser to your chosen AI provider — TruLens has no server, no analytics, and never sees your data.
 
@@ -107,6 +110,7 @@ Paste each line into the corresponding "Permission justification" field when pro
 | Host: `api.minimax.io`, `api.minimaxi.com` | The extension's service worker calls the MiniMax API directly when the user has opted into AI deep analysis and supplied a MiniMax API key. No calls are made without the key and without the user's explicit action. |
 | Host: `api.anthropic.com` | The extension's service worker calls the Anthropic API directly when the user has opted into AI deep analysis and supplied an Anthropic API key. No calls are made without the key and without the user's explicit action. |
 | Host: `api.openai.com` | The extension's service worker calls the OpenAI API directly when the user has opted into AI deep analysis and supplied an OpenAI API key. No calls are made without the key and without the user's explicit action. |
+| Host: `*.workers.dev` | The extension's service worker calls the owner-hosted Cloudflare Worker proxy when the free shared-AI tier is active. The proxy holds the owner's API key server-side; no key is transmitted from the extension bundle. |
 
 ---
 
