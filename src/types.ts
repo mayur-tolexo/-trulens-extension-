@@ -47,8 +47,8 @@ export interface Settings {
 
 /** Set to your deployed Cloudflare Worker URL to enable the free shared-AI tier.
  *  Leave empty to keep AI dormant until the owner sets it and rebuilds.
- *  NEVER put an API key here — the key lives only as a Cloudflare Worker secret. */
-export const DEFAULT_PROXY_URL = ''; // set to your deployed Cloudflare Worker URL to enable the free shared-AI tier
+ *  NEVER put an API key here — the key lives only as a server-side secret. */
+export const DEFAULT_PROXY_URL = 'https://ua4dza32zb.execute-api.us-east-1.amazonaws.com/'; // deployed AWS proxy (free shared-AI tier)
 
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,

@@ -155,3 +155,7 @@ store-assets/
 
 # Raw screenshot captures (framed via npm run screenshots)
 screenshots/
+
+# SAM build artifacts
+proxy/aws/.aws-sam/
+proxy/aws/samconfig.toml
