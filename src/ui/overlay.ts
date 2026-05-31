@@ -20,7 +20,7 @@ function build(): HTMLElement {
   el.setAttribute('data-collapsed', 'false');
   el.innerHTML = `
     <div class="trulens-ov-head">
-      <span class="trulens-ov-logo">🛡</span>
+      <span class="trulens-ov-logo"><svg width="20" height="20" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><rect width="128" height="128" rx="30" fill="#fff"/><path d="M64 24 L100 36 V64 C100 87 84 101 64 108 C44 101 28 87 28 64 V36 Z" fill="#2742E6"/><path d="M48 66 L59 77 L82 52" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>
       <span class="trulens-ov-title">TruLens</span>
       <span class="trulens-ov-pill" hidden>–</span>
       <button class="trulens-ov-toggle" title="Minimize" aria-label="Minimize">–</button>

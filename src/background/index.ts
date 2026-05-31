@@ -1,4 +1,4 @@
-import { runDeepAnalysis, testConnection } from './llm';
+import { runDeepAnalysis, runBatchAnalysis, testConnection } from './llm';
 import { getCached, setCached } from './cache';
 import { getSettings, setSettings } from './settings';
 
@@ -12,6 +12,25 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
     try {
+      if (msg.type === 'deepAnalysisBatch') {
+        const reviews = msg.reviews ?? [];
+        const out: any[] = [];
+        const toRun: any[] = [];
+        for (const rv of reviews) {
+          const cached = await getCached(rv.text);
+          if (cached) out.push({ id: rv.id, ...cached });
+          else toRun.push(rv);
+        }
+        if (toRun.length) {
+          const results = await runBatchAnalysis(toRun, msg.siblings ?? []);
+          for (let i = 0; i < toRun.length; i++) {
+            const r = results[i] ?? { score: 50, verdict: 'mixed', reasoning: '' };
+            await setCached(toRun[i].text, r);
+            out.push({ id: toRun[i].id, ...r });
+          }
+        }
+        return sendResponse({ ok: true, results: out });
+      }
       if (msg.type === 'deepAnalysis') {
         const cached = await getCached(msg.review.text);
         if (cached) return sendResponse({ ok: true, result: cached, cached: true });

@@ -105,6 +105,66 @@ export async function runDeepAnalysis(review: Review, siblings: Review[]): Promi
   return parseResult(extractText(s.providerMode, json));
 }
 
+const BATCH_PROMPT = (reviews: Review[], siblings: Review[]) => {
+  const items = reviews.map((r, i) => {
+    const ctx: string[] = [];
+    if (r.verifiedPurchase === true) ctx.push('verified purchase');
+    if (r.isLocalGuide === true) ctx.push('Local Guide');
+    if (r.reviewerReviewCount != null) ctx.push(`${r.reviewerReviewCount} reviews`);
+    if (r.reviewerPhotoCount != null) ctx.push(`${r.reviewerPhotoCount} photos`);
+    const c = ctx.length ? ` [reviewer: ${ctx.join(', ')}]` : '';
+    return `[${i + 1}] (${r.rating ?? '?'}/5)${c} """${(r.text || '').slice(0, 600)}"""`;
+  }).join('\n');
+  const others = siblings.slice(0, 3).map(x => `- """${(x.text || '').slice(0, 150)}"""`).join('\n') || '- none';
+  return `You assess how GENUINE each review is — fairly, with no bias against the business. Score 0-100 (100 = clearly authentic first-hand experience; 0 = fake/incentivized/spam). Give the benefit of the doubt: genuine reviews are often short, very positive, or harshly critical. Only LOWER for concrete manipulation: generic templated wording, incentivized phrasing, rating contradicting text, copy-paste similarity, or a brand-new single-review account. REWARD specific first-hand details and a credible reviewer profile.
+
+REVIEWS:
+${items}
+
+CONTEXT (other reviews on this page):
+${others}
+
+Return ONLY a JSON array, one object per review in order, no prose:
+[{"i":1,"score":<0-100>,"reasoning":"<one short sentence>"}, ...]`;
+};
+
+export function buildBatchRequest(reviews: Review[], siblings: Review[], s: Settings): LlmRequest {
+  const content = BATCH_PROMPT(reviews, siblings);
+  const model = s.model || 'claude-sonnet-4-6';
+  const max_tokens = Math.min(8000, 700 + reviews.length * 320);
+  if (s.providerMode === 'openai-compatible') {
+    const baseU = s.baseUrl.replace(/\/+$/, '');
+    return { url: `${baseU}/chat/completions`, headers: { 'content-type': 'application/json', 'authorization': `Bearer ${s.apiKey}` }, body: JSON.stringify({ model, max_tokens, messages: [{ role: 'user', content }] }) };
+  }
+  if (s.providerMode === 'anthropic') {
+    const baseU = (s.baseUrl || 'https://api.anthropic.com').replace(/\/+$/, '');
+    return { url: `${baseU}/v1/messages`, headers: { 'content-type': 'application/json', 'x-api-key': s.apiKey, 'authorization': `Bearer ${s.apiKey}`, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model, max_tokens, messages: [{ role: 'user', content }] }) };
+  }
+  return { url: s.proxyUrl, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model, max_tokens, messages: [{ role: 'user', content }] }) };
+}
+
+export function parseBatch(raw: string, n: number): DeepAnalysisResult[] {
+  let arr: any[] = [];
+  const m = raw.match(/\[[\s\S]*\]/);
+  if (m) { try { arr = JSON.parse(m[0]); } catch { arr = []; } }
+  const out: DeepAnalysisResult[] = [];
+  for (let k = 0; k < n; k++) {
+    const found = Array.isArray(arr) ? arr.find(o => Number(o?.i) === k + 1) ?? arr[k] : undefined;
+    const score = Math.max(0, Math.min(100, Number(found?.score) || 50));
+    out.push({ score, verdict: verdictFor(score), reasoning: String(found?.reasoning ?? '') });
+  }
+  return out;
+}
+
+export async function runBatchAnalysis(reviews: Review[], siblings: Review[]): Promise<DeepAnalysisResult[]> {
+  const s = await getSettings();
+  const req = buildBatchRequest(reviews, siblings, s);
+  const res = await fetch(req.url, { method: 'POST', headers: req.headers, body: req.body });
+  if (!res.ok) throw new Error(`LLM ${res.status}`);
+  const json = await res.json();
+  return parseBatch(extractText(s.providerMode, json), reviews.length);
+}
+
 const SAMPLE_REVIEW: Review = {
   id: 'tl-test',
   text: 'Battery lasts all day and the camera is sharp in low light. Three weeks of daily use, no issues.',

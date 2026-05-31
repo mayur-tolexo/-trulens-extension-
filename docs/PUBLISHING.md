@@ -111,7 +111,7 @@ For a public release: select **Public**.
 
 Click **"Submit for review"**. The extension will enter the review queue.
 
-**Typical review time:** 1–3 business days for new items. Items with broad host permissions (as this one has) may take longer or require additional scrutiny.
+**Typical review time:** 1–3 business days for new items. Items with host permissions that cover third-party API domains may take longer or require additional scrutiny.
 
 ---
 
@@ -125,9 +125,9 @@ Click **"Submit for review"**. The extension will enter the review queue.
 
 ## Common Rejection Reasons and How to Address Them
 
-### Broad host permissions not sufficiently justified
-TruLens requests host permissions for retail and mapping sites (to inject badges) and for AI provider APIs (to make direct calls from the service worker). Each permission has a one-line justification in `docs/STORE_LISTING.md`. If the reviewer requests more detail, emphasize:
-- The review-site permissions are the extension's core function — it cannot read or badge reviews without access to those pages.
+### Host permissions not sufficiently justified
+TruLens requests a host permission for Google Maps (to inject badges) and for AI provider APIs (to make direct calls from the service worker). Each permission has a one-line justification in `docs/STORE_LISTING.md`. If the reviewer requests more detail, emphasize:
+- The Google Maps permission is the extension's core function — it cannot read or badge reviews without access to that page.
 - The AI API permissions are only ever used when the user has explicitly opted in and supplied their own API key; no calls are made otherwise.
 
 ### Remote code execution
@@ -140,7 +140,7 @@ Ensure the GitHub Pages URL resolves before submitting (Step 3). The reviewer wi
 Keep the store description and the actual UI in sync. If you add or remove features before submission, update `docs/STORE_LISTING.md` accordingly.
 
 ### Misleading screenshots
-Screenshots must show the actual running extension on real pages, not mock-ups. Use a real Amazon, Flipkart, or Google Maps page with actual reviews.
+Screenshots must show the actual running extension on real pages, not mock-ups. Use a real Google Maps place page with actual reviews.
 
 ---
 
@@ -154,7 +154,7 @@ Go through every item before clicking "Submit for review":
 - [ ] `manifest.json` version is `1.0.0` (or incremented correctly for updates)
 - [ ] All four icon sizes are present: `icon-16.png`, `icon-32.png`, `icon-48.png`, `icon-128.png`
 - [ ] Small promo tile `promo-440x280.png` (440 × 280 px) is uploaded
-- [ ] At least one screenshot (1280 × 800 or 640 × 400 px) showing badges on a real product page is uploaded
+- [ ] At least one screenshot (1280 × 800 or 640 × 400 px) showing badges on a real Google Maps Reviews tab is uploaded
 - [ ] Privacy policy page is live at the chosen URL and loads without errors
 - [ ] The URL notice in `docs/privacy.html` has been replaced with the actual URL
 - [ ] Privacy policy URL is entered in the store listing

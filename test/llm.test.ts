@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildRequest, extractText, parseResult } from '../src/background/llm';
+import { buildRequest, extractText, parseResult, parseBatch } from '../src/background/llm';
 import { DEFAULT_SETTINGS, type Settings } from '../src/types';
 import type { Review } from '../src/types';
 
@@ -66,6 +66,48 @@ describe('extractText', () => {
   });
   it('returns empty string when no usable content block exists', () => {
     expect(extractText('anthropic', { content: [{ type: 'thinking', thinking: '...' }] })).toBe('');
+  });
+});
+
+describe('parseBatch', () => {
+  it('parses a valid batch JSON array and returns n results in order', () => {
+    const raw = '[{"i":1,"score":80,"reasoning":"looks real"},{"i":2,"score":30,"reasoning":"generic text"}]';
+    const results = parseBatch(raw, 2);
+    expect(results).toHaveLength(2);
+    expect(results[0].score).toBe(80);
+    expect(results[0].verdict).toBe('genuine');
+    expect(results[0].reasoning).toBe('looks real');
+    expect(results[1].score).toBe(30);
+    expect(results[1].verdict).toBe('fake');
+  });
+  it('aligns items by the "i" field even when out of order', () => {
+    const raw = '[{"i":2,"score":60,"reasoning":"second"},{"i":1,"score":90,"reasoning":"first"}]';
+    const results = parseBatch(raw, 2);
+    expect(results[0].score).toBe(90);
+    expect(results[0].reasoning).toBe('first');
+    expect(results[1].score).toBe(60);
+    expect(results[1].reasoning).toBe('second');
+  });
+  it('falls back to score 50 for missing or garbage entries', () => {
+    const results = parseBatch('no json here', 3);
+    expect(results).toHaveLength(3);
+    results.forEach(r => expect(r.score).toBe(50));
+  });
+  it('returns exactly n items regardless of array length', () => {
+    const raw = '[{"i":1,"score":70,"reasoning":"one"}]';
+    const results = parseBatch(raw, 4);
+    expect(results).toHaveLength(4);
+    expect(results[0].score).toBe(70);
+    // missing entries fall back to 50
+    expect(results[1].score).toBe(50);
+    expect(results[2].score).toBe(50);
+    expect(results[3].score).toBe(50);
+  });
+  it('clamps out-of-range scores in batch results', () => {
+    const raw = '[{"i":1,"score":200,"reasoning":"high"},{"i":2,"score":-10,"reasoning":"low"}]';
+    const results = parseBatch(raw, 2);
+    expect(results[0].score).toBe(100);
+    expect(results[1].score).toBe(0);
   });
 });
 

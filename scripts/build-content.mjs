@@ -6,12 +6,7 @@
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
-const MATCHES = [
-  'https://*.amazon.com/*',
-  'https://*.amazon.in/*',
-  'https://*.flipkart.com/*',
-  'https://www.google.com/maps/*',
-];
+const MATCHES = ['https://www.google.com/maps/*'];
 
 await build({
   entryPoints: ['src/content/index.ts'],

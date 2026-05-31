@@ -113,15 +113,21 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
   // All reviews seen, keyed by id, for sibling context
   const seen = new Map<string, Review>();
 
-  // Auto-deep queue state
-  const deepQueue: string[] = [];
-  const queued = new Set<string>();
-  let inflight = 0, analyzed = 0;
-  const MAX_INFLIGHT = 3;
+  // Batch AI queue state
+  const pending: string[] = [];
+  const queuedIds = new Set<string>();
+  let batchesInflight = 0;
+  let analyzed = 0;
+  const BATCH_SIZE = 8;
+  const MAX_BATCHES = 2;
 
-  const refresh = (scanning: boolean) => {
+  // Loading flag: true while reviews are still being discovered/loaded
+  let loading = false;
+  let settleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const refresh = () => {
     const name = (a.pageName && a.pageName(document)) || cleanTitle();
-    updateOverlay(name, aggregate([...pageResults.values()]), scanning, analyzed);
+    updateOverlay(name, aggregate([...pageResults.values()]), loading, analyzed);
   };
 
   function siblingsFor(id: string): Review[] {
@@ -134,35 +140,40 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       renderDetailCard(m.f.anchor, result, () => deepAnalyze(m.f, siblingsFor(id))));
   }
 
-  function pumpDeep() {
-    while (inflight < MAX_INFLIGHT && deepQueue.length) {
-      const id = deepQueue.shift()!;
-      const m = mounts.get(id); if (!m) continue;
-      const gen = generation;
-      inflight++;
-      chrome.runtime.sendMessage(
-        { type: 'deepAnalysis', review: m.f.review, siblings: siblingsFor(id) },
-        (resp) => {
-          inflight--;
-          if (gen !== generation) { pumpDeep(); return; } // place changed; drop stale result
-          if (resp?.ok) {
-            const r = resp.result;
-            const verdict = r.verdict ?? verdictFor(r.score);
-            const prev = pageResults.get(id) ?? scoreReview(m.f.review, []);
-            const updated: ScoreResult = { ...prev, score: r.score, verdict };
-            pageResults.set(id, updated);
-            renderFor(id, updated);    // upgrade the inline badge to the AI verdict
-            analyzed++;
-          }
-          refresh(inflight > 0);
-          pumpDeep();
-        });
-    }
+  function siblingsForBatch(ids: string[]): Review[] {
+    return [...seen.values()].filter(r => !ids.includes(r.id)).slice(0, 3);
   }
 
   function enqueueDeep(id: string) {
-    if (queued.has(id)) return;
-    queued.add(id); deepQueue.push(id); pumpDeep();
+    if (queuedIds.has(id)) return;
+    queuedIds.add(id); pending.push(id); pumpBatches();
+  }
+
+  function pumpBatches() {
+    while (batchesInflight < MAX_BATCHES && pending.length) {
+      const ids = pending.splice(0, BATCH_SIZE);
+      const reviews = ids.map(id => mounts.get(id)?.f.review).filter(Boolean) as Review[];
+      if (!reviews.length) continue;
+      const gen = generation;
+      batchesInflight++;
+      chrome.runtime.sendMessage(
+        { type: 'deepAnalysisBatch', reviews, siblings: siblingsForBatch(ids) },
+        (resp) => {
+          batchesInflight--;
+          if (gen !== generation) { pumpBatches(); return; }
+          if (resp?.ok && Array.isArray(resp.results)) {
+            for (const r of resp.results) {
+              const prev = pageResults.get(r.id); if (!prev) continue;
+              const verdict = r.verdict ?? verdictFor(r.score);
+              pageResults.set(r.id, { ...prev, score: r.score, verdict });
+              renderFor(r.id, pageResults.get(r.id)!);
+              analyzed++;
+            }
+          }
+          refresh();
+          pumpBatches();
+        });
+    }
   }
 
   function resetForNewPlace() {
@@ -171,12 +182,13 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
     seen.clear();
     scored.clear();
     mounts.clear();
-    deepQueue.length = 0;
-    queued.clear();
+    pending.length = 0;
+    queuedIds.clear();
     analyzed = 0;
     autoLoadStarted = false;
+    loading = true;
     log('place changed → reset');
-    refresh(true);           // immediately clear the panel to the new-place state
+    refresh();               // immediately clear the panel to the new-place state
   }
 
   const scan = debounce(() => {
@@ -224,9 +236,14 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       autoLoadStarted = true;
       autoLoad();
     }
-    // Loader reflects REAL activity (new reviews or analysis in flight) so it
-    // stops after the first load — Google Maps mutates the DOM constantly.
-    refresh(added > 0 || inflight > 0);
+    // Loader reflects review-discovery only: animate while new reviews keep arriving,
+    // then settle ~1.5 s after the last new one.
+    if (added > 0) {
+      loading = true;
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => { loading = false; refresh(); }, 1500);
+    }
+    refresh();
   }, 250);
 
   function deepAnalyze(f: ExtractedReview, siblings: Review[]) {
@@ -247,7 +264,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
           pageResults.set(f.review.id, updated);
           // Also upgrade the inline badge
           renderFor(f.review.id, updated);
-          refresh(false);
+          refresh();
         } else {
           showDeepResult('Deep analysis unavailable.');
         }
@@ -278,7 +295,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       if (!reviewsTabActive()) {
         log('left Reviews tab → stop auto-load');
         autoLoadStarted = false;    // re-arm so it resumes if they return
-        refresh(inflight > 0);
+        refresh();
         return;
       }
       const c = findScrollContainer();
@@ -288,7 +305,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       scan();                       // score whatever is now loaded
       if (!c || stable >= 6 || ticks >= MAX_TICKS) {
         log('auto-load complete:', count, 'reviews loaded');
-        refresh(inflight > 0);
+        refresh();
         return;
       }
       c.scrollTo({ top: c.scrollHeight });
@@ -298,8 +315,8 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
     step();
   }
 
-  refresh(true);            // show the panel immediately in its "scanning" state
-  scan();                   // autoLoad is kicked off from scan() once reviews appear
+  loading = true; refresh(); // show the panel immediately in its "scanning" state
+  scan();                    // autoLoad is kicked off from scan() once reviews appear
   new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
 }
 
