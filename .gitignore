@@ -152,3 +152,6 @@ trulens-v*.zip
 public/icon-*.png
 public/promo-*.png
 store-assets/
+
+# Raw screenshot captures (framed via npm run screenshots)
+screenshots/

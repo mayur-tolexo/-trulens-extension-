@@ -82,13 +82,12 @@ function renderSummary(summary: ProductSummary, name?: string | null) {
   const gaugeNum = document.getElementById('gauge-num')!;
   gaugeNum.textContent = String(summary.score);
 
-  // 5-star rating from our analysis (0–100 → 0–5)
+  // 5-star rating from our analysis (0–100 → 0–5). Nearest whole star (font-safe);
+  // the precise number beside it conveys the decimal.
   const stars = Math.round(summary.score / 20 * 10) / 10;
-  const fullStars = Math.floor(stars);
-  const halfStar = (stars - fullStars) >= 0.5 ? 1 : 0;
-  const emptyStars = 5 - fullStars - halfStar;
+  const full = Math.max(0, Math.min(5, Math.round(stars)));
   (document.getElementById('stars')!).textContent =
-    `${'★'.repeat(fullStars)}${halfStar ? '⯨' : ''}${'☆'.repeat(emptyStars)}  ${stars.toFixed(1)}/5`;
+    `${'★'.repeat(full)}${'☆'.repeat(5 - full)}  ${stars.toFixed(1)}/5`;
 
   // Verdict pill
   const verdictPill = document.getElementById('verdict-pill')!;

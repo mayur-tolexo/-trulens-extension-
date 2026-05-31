@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "icons": "node scripts/build-icons.mjs",
+    "screenshots": "node scripts/build-screenshots.mjs",
     "build": "node scripts/build-icons.mjs && vite build && node scripts/build-content.mjs",
     "package": "node scripts/package.mjs",
     "test": "vitest run",
