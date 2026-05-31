@@ -127,3 +127,14 @@ Lambda and DynamoDB are effectively free at light usage levels. Both services ha
 - Per user (anonymous device UUID), per day (UTC).
 - Default: 40 requests / day. Adjust by re-running `deploy.py` with a new `DAILY_LIMIT` env var (the script updates Lambda environment variables on re-run).
 - Users who want unlimited analysis can switch to BYOK mode in Settings (choose "My own key" and enter their MiniMax or Anthropic key).
+
+## Teardown (remove everything)
+
+`teardown.py` deletes all proxy resources (API Gateway, Lambda, DynamoDB table, IAM role). **This disables the free-AI tier for everyone using the published extension** — only run it to decommission or rebuild.
+
+```sh
+cd proxy/aws
+AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_DEFAULT_REGION=us-east-1 \
+  /tmp/tldeploy/bin/python teardown.py     # or any python with boto3 installed
+```
+It is idempotent (missing resources are skipped). After teardown, set `DEFAULT_PROXY_URL=''` in `src/types.ts` and rebuild if you want to ship BYOK-only.
