@@ -92,8 +92,10 @@ export function updateOverlay(name: string | null, summary: ProductSummary, scan
   const starsEl = q('.trulens-ov-stars');
   if (has) {
     const stars = Math.round(summary.score / 20 * 10) / 10; // 0–100 → 0–5, 1 decimal
-    const full = Math.round(stars);
-    starsEl.textContent = `${'★'.repeat(full)}${'☆'.repeat(5 - full)}  ${stars.toFixed(1)}/5`;
+    const full = Math.floor(stars);
+    const half = (stars - full) >= 0.5 ? 1 : 0;
+    const empty = 5 - full - half;
+    starsEl.textContent = `${'★'.repeat(full)}${half ? '⯨' : ''}${'☆'.repeat(empty)}  ${stars.toFixed(1)}/5`;
     starsEl.style.display = '';
   } else {
     starsEl.style.display = 'none';

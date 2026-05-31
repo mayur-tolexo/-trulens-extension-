@@ -1,12 +1,6 @@
 import type { SiteAdapter, ExtractedReview } from './types';
+import { hashId } from './types';
 import type { Review } from '../types';
-
-function hashId(text: string, author: string): string {
-  let h = 0;
-  const s = `${author}::${text}`;
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  return `a_${(h >>> 0).toString(36)}`;
-}
 
 function num(re: RegExp, s: string | null | undefined): number | null {
   const m = (s ?? '').match(re);
@@ -15,7 +9,7 @@ function num(re: RegExp, s: string | null | undefined): number | null {
 
 export const amazonAdapter: SiteAdapter = {
   key: 'amazon',
-  matches: (url) => /(^|\.)amazon\.(com|in|co\.[a-z]+)\b/.test(new URL(url).hostname),
+  matches: (url) => { try { return /(^|\.)amazon\.(com|in|co\.[a-z]{2}|com\.[a-z]{2})$/.test(new URL(url).hostname); } catch { return false; } },
   extractReviews(root) {
     const out: ExtractedReview[] = [];
     for (const el of Array.from(root.querySelectorAll('[data-hook="review"]'))) {
@@ -26,7 +20,7 @@ export const amazonAdapter: SiteAdapter = {
       const verifiedPurchase = !!el.querySelector('[data-hook="avp-badge"]');
       const helpfulCount = num(/([0-9,]+)\s+people/, el.querySelector('[data-hook="helpful-vote-statement"]')?.textContent?.replace(/,/g, ''));
       const review: Review = {
-        id: hashId(text, author ?? ''), text,
+        id: hashId('a', text, author ?? ''), text,
         rating: rating == null ? null : Math.round(rating),
         author, verifiedPurchase, date: null,
         reviewerReviewCount: null, isLocalGuide: null, helpfulCount

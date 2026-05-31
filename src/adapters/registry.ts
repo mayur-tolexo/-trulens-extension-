@@ -6,5 +6,5 @@ import { googleMapsAdapter } from './googleMaps';
 const ADAPTERS: SiteAdapter[] = [amazonAdapter, flipkartAdapter, googleMapsAdapter];
 
 export function adapterFor(url: string): SiteAdapter | null {
-  return ADAPTERS.find(a => a.matches(url)) ?? null;
+  return ADAPTERS.find(a => { try { return a.matches(url); } catch { return false; } }) ?? null;
 }

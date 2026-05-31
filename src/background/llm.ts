@@ -47,15 +47,13 @@ export function buildRequest(review: Review, siblings: Review[], s: Settings): L
   }
   if (s.providerMode === 'anthropic') {
     const base = (s.baseUrl || 'https://api.anthropic.com').replace(/\/+$/, '');
+    const isOfficial = !s.baseUrl || /(^|\.)anthropic\.com$/.test(new URL(base).hostname);
+    const anthropicHeaders: Record<string, string> = isOfficial
+      ? { 'content-type': 'application/json', 'x-api-key': s.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }
+      : { 'content-type': 'application/json', 'authorization': `Bearer ${s.apiKey}`, 'anthropic-version': '2023-06-01' };
     return {
       url: `${base}/v1/messages`,
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': s.apiKey,
-        'authorization': `Bearer ${s.apiKey}`,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: anthropicHeaders,
       body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: 'user', content }] })
     };
   }
@@ -92,7 +90,8 @@ export function parseResult(raw: string): DeepAnalysisResult {
   const m = raw.match(/\{[\s\S]*\}/);
   let parsed: { score?: unknown; reasoning?: unknown } = { score: 50, reasoning: 'Could not parse response.' };
   if (m) { try { parsed = JSON.parse(m[0]); } catch { /* keep fallback */ } }
-  const score = Math.max(0, Math.min(100, Number(parsed.score) || 50));
+  const n = Number(parsed.score);
+  const score = Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 50;
   return { score, verdict: verdictFor(score), reasoning: String(parsed.reasoning ?? '') };
 }
 
@@ -138,7 +137,11 @@ export function buildBatchRequest(reviews: Review[], siblings: Review[], s: Sett
   }
   if (s.providerMode === 'anthropic') {
     const baseU = (s.baseUrl || 'https://api.anthropic.com').replace(/\/+$/, '');
-    return { url: `${baseU}/v1/messages`, headers: { 'content-type': 'application/json', 'x-api-key': s.apiKey, 'authorization': `Bearer ${s.apiKey}`, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model, max_tokens, messages: [{ role: 'user', content }] }) };
+    const isOfficialU = !s.baseUrl || /(^|\.)anthropic\.com$/.test(new URL(baseU).hostname);
+    const batchAnthropicHeaders: Record<string, string> = isOfficialU
+      ? { 'content-type': 'application/json', 'x-api-key': s.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }
+      : { 'content-type': 'application/json', 'authorization': `Bearer ${s.apiKey}`, 'anthropic-version': '2023-06-01' };
+    return { url: `${baseU}/v1/messages`, headers: batchAnthropicHeaders, body: JSON.stringify({ model, max_tokens, messages: [{ role: 'user', content }] }) };
   }
   return { url: s.proxyUrl, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model, max_tokens, messages: [{ role: 'user', content }] }) };
 }
@@ -150,7 +153,8 @@ export function parseBatch(raw: string, n: number): DeepAnalysisResult[] {
   const out: DeepAnalysisResult[] = [];
   for (let k = 0; k < n; k++) {
     const found = Array.isArray(arr) ? arr.find(o => Number(o?.i) === k + 1) ?? arr[k] : undefined;
-    const score = Math.max(0, Math.min(100, Number(found?.score) || 50));
+    const bn = Number(found?.score);
+    const score = Number.isFinite(bn) ? Math.max(0, Math.min(100, bn)) : 50;
     out.push({ score, verdict: verdictFor(score), reasoning: String(found?.reasoning ?? '') });
   }
   return out;

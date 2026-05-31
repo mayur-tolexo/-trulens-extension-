@@ -44,6 +44,16 @@ describe('buildRequest', () => {
     const r = buildRequest(review, [], s({ providerMode: 'anthropic', baseUrl: 'https://api.minimax.io/anthropic/' }));
     expect(r.url).toBe('https://api.minimax.io/anthropic/v1/messages');
   });
+  it('anthropic: official Anthropic does not set authorization header', () => {
+    const r = buildRequest(review, [], s({ providerMode: 'anthropic', baseUrl: '', apiKey: 'sk-ant' }));
+    expect(r.headers['authorization']).toBeUndefined();
+    expect(r.headers['anthropic-dangerous-direct-browser-access']).toBe('true');
+  });
+  it('anthropic: custom baseUrl does not set dangerous-direct-browser-access', () => {
+    const r = buildRequest(review, [], s({ providerMode: 'anthropic', baseUrl: 'https://api.minimax.io/anthropic', apiKey: 'mk' }));
+    expect(r.headers['anthropic-dangerous-direct-browser-access']).toBeUndefined();
+    expect(r.headers['x-api-key']).toBeUndefined();
+  });
 });
 
 describe('extractText', () => {
@@ -126,5 +136,16 @@ describe('parseResult', () => {
   });
   it('clamps out-of-range scores', () => {
     expect(parseResult('{"score": 999}').score).toBe(100);
+  });
+  it('score 0 stays 0 (not coerced to 50)', () => {
+    expect(parseResult('{"score": 0, "reasoning": "clearly fake"}').score).toBe(0);
+  });
+});
+
+describe('parseBatch score-0', () => {
+  it('score 0 in batch stays 0 (not coerced to 50)', () => {
+    const raw = '[{"i":1,"score":0,"reasoning":"spam"}]';
+    const results = parseBatch(raw, 1);
+    expect(results[0].score).toBe(0);
   });
 });

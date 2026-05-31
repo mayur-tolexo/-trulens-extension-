@@ -156,23 +156,30 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
       if (!reviews.length) continue;
       const gen = generation;
       batchesInflight++;
-      chrome.runtime.sendMessage(
-        { type: 'deepAnalysisBatch', reviews, siblings: siblingsForBatch(ids) },
-        (resp) => {
-          batchesInflight--;
-          if (gen !== generation) { pumpBatches(); return; }
-          if (resp?.ok && Array.isArray(resp.results)) {
-            for (const r of resp.results) {
-              const prev = pageResults.get(r.id); if (!prev) continue;
-              const verdict = r.verdict ?? verdictFor(r.score);
-              pageResults.set(r.id, { ...prev, score: r.score, verdict });
-              renderFor(r.id, pageResults.get(r.id)!);
-              analyzed++;
+      try {
+        chrome.runtime.sendMessage(
+          { type: 'deepAnalysisBatch', reviews, siblings: siblingsForBatch(ids) },
+          (resp) => {
+            if (chrome.runtime.lastError) { batchesInflight--; refresh(); return; }
+            batchesInflight--;
+            if (gen !== generation) { pumpBatches(); return; }
+            if (resp?.ok && Array.isArray(resp.results)) {
+              for (const r of resp.results) {
+                const prev = pageResults.get(r.id); if (!prev) continue;
+                const verdict = r.verdict ?? verdictFor(r.score);
+                pageResults.set(r.id, { ...prev, score: r.score, verdict });
+                renderFor(r.id, pageResults.get(r.id)!);
+                analyzed++;
+              }
             }
-          }
-          refresh();
-          pumpBatches();
-        });
+            refresh();
+            pumpBatches();
+          });
+      } catch {
+        batchesInflight--;
+        refresh();
+        return;
+      }
     }
   }
 
@@ -192,6 +199,7 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
   }
 
   const scan = debounce(() => {
+    if (document.hidden) return;
     // Google Maps is a SPA: clicking a new place must clear the previous one.
     const pk = placeKey();
     if (pk !== lastPlaceKey) { lastPlaceKey = pk; resetForNewPlace(); }
@@ -248,27 +256,34 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
 
   function deepAnalyze(f: ExtractedReview, siblings: Review[]) {
     showDeepResult('Analyzing…');
-    chrome.runtime.sendMessage(
-      { type: 'deepAnalysis', review: f.review, siblings },
-      (resp) => {
-        if (resp?.ok) {
-          const r = resp.result;
-          const verdict = r.verdict ?? verdictFor(r.score);
-          applyDeepResult({ score: r.score, verdict, reasoning: r.reasoning });
-          // Update stored result so the popup + overlay reflect LLM values
-          const updated: ScoreResult = {
-            ...pageResults.get(f.review.id)!,
-            score: r.score,
-            verdict
-          };
-          pageResults.set(f.review.id, updated);
-          // Also upgrade the inline badge
-          renderFor(f.review.id, updated);
-          refresh();
-        } else {
-          showDeepResult('Deep analysis unavailable.');
-        }
-      });
+    const gen = generation;
+    try {
+      chrome.runtime.sendMessage(
+        { type: 'deepAnalysis', review: f.review, siblings },
+        (resp) => {
+          if (chrome.runtime.lastError) { showDeepResult('Deep analysis unavailable.'); return; }
+          if (gen !== generation) return;
+          if (resp?.ok) {
+            const r = resp.result;
+            const verdict = r.verdict ?? verdictFor(r.score);
+            applyDeepResult({ score: r.score, verdict, reasoning: r.reasoning });
+            // Update stored result so the popup + overlay reflect LLM values
+            const updated: ScoreResult = {
+              ...pageResults.get(f.review.id)!,
+              score: r.score,
+              verdict
+            };
+            pageResults.set(f.review.id, updated);
+            // Also upgrade the inline badge
+            renderFor(f.review.id, updated);
+            refresh();
+          } else {
+            showDeepResult('Deep analysis unavailable.');
+          }
+        });
+    } catch {
+      showDeepResult('Deep analysis unavailable.');
+    }
   }
 
   // Find the scrollable reviews container on Google Maps.
@@ -288,9 +303,11 @@ function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings
   // Scroll the reviews container to the bottom repeatedly until no new reviews
   // load, then stop. Runs exactly once per place.
   function autoLoad() {
+    const gen = generation;
     let lastCount = 0, stable = 0, ticks = 0;
     const MAX_TICKS = 100;
     const step = () => {
+      if (gen !== generation) return;
       // Stop immediately if the user switched away from the Reviews tab.
       if (!reviewsTabActive()) {
         log('left Reviews tab → stop auto-load');

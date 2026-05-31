@@ -1,11 +1,6 @@
 import type { SiteAdapter, ExtractedReview } from './types';
+import { hashId } from './types';
 import type { Review } from '../types';
-
-function hashId(text: string, author: string): string {
-  let h = 0; const s = `${author}::${text}`;
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  return `g_${(h >>> 0).toString(36)}`;
-}
 
 /** Review prose: prefer the known text classes, else the longest leaf-ish text span. */
 function reviewText(el: Element): string {
@@ -14,7 +9,7 @@ function reviewText(el: Element): string {
   let best = '';
   for (const n of Array.from(el.querySelectorAll('span'))) {
     const t = n.textContent?.trim() ?? '';
-    if (t.length > best.length && t.length >= 15 && t.length <= 1500 && !/Local Guide|reviews?\b|photos?\b/i.test(t)) {
+    if (t.length > best.length && t.length >= 15 && t.length <= 1500 && !/^\s*(Local Guide\b|[0-9,]+\s+(reviews?|photos?)\b)/i.test(t)) {
       best = t;
     }
   }
@@ -56,7 +51,7 @@ export const googleMapsAdapter: SiteAdapter = {
       const rating = rm ? Math.round(Number(rm[1])) : null;
 
       const review: Review = {
-        id: hashId(text, author ?? ''), text,
+        id: hashId('g', text, author ?? ''), text,
         rating, author, verifiedPurchase: null, date: null,
         reviewerReviewCount, isLocalGuide, helpfulCount: null,
         reviewerPhotoCount

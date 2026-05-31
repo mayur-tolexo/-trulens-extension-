@@ -1,5 +1,5 @@
 import { runDeepAnalysis, runBatchAnalysis, testConnection } from './llm';
-import { getCached, setCached } from './cache';
+import { getCached, setCached, clearCache } from './cache';
 import { getSettings, setSettings } from './settings';
 
 // Open the onboarding/options page on first install only (not on update or reload).
@@ -41,6 +41,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       if (msg.type === 'testConnection') return sendResponse(await testConnection());
       if (msg.type === 'getSettings') return sendResponse({ ok: true, settings: await getSettings() });
       if (msg.type === 'setSettings') return sendResponse({ ok: true, settings: await setSettings(msg.patch) });
+      if (msg.type === 'clearCache') { await clearCache(); return sendResponse({ ok: true }); }
       sendResponse({ ok: false, error: 'unknown message' });
     } catch (e) {
       sendResponse({ ok: false, error: (e as Error).message });

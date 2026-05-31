@@ -84,9 +84,11 @@ function renderSummary(summary: ProductSummary, name?: string | null) {
 
   // 5-star rating from our analysis (0–100 → 0–5)
   const stars = Math.round(summary.score / 20 * 10) / 10;
-  const full = Math.round(stars);
+  const fullStars = Math.floor(stars);
+  const halfStar = (stars - fullStars) >= 0.5 ? 1 : 0;
+  const emptyStars = 5 - fullStars - halfStar;
   (document.getElementById('stars')!).textContent =
-    `${'★'.repeat(full)}${'☆'.repeat(5 - full)}  ${stars.toFixed(1)}/5`;
+    `${'★'.repeat(fullStars)}${halfStar ? '⯨' : ''}${'☆'.repeat(emptyStars)}  ${stars.toFixed(1)}/5`;
 
   // Verdict pill
   const verdictPill = document.getElementById('verdict-pill')!;
@@ -164,7 +166,7 @@ async function saveSettings() {
 }
 
 function wireSettings() {
-  document.querySelectorAll('input, select').forEach((el) => el.addEventListener('change', saveSettings));
+  document.querySelectorAll('input, select:not(#providerMode)').forEach((el) => el.addEventListener('change', saveSettings));
 
   // On provider change, apply the preset base URL + model, then save.
   const providerSel = document.getElementById('providerMode') as HTMLSelectElement;
@@ -235,6 +237,7 @@ function wireReset() {
   const btn = document.getElementById('reset-btn') as HTMLButtonElement;
   btn.addEventListener('click', async () => {
     await send({ type: 'setSettings', patch: DEFAULT_SETTINGS });
+    await send({ type: 'clearCache' });
     location.reload();
   });
 }

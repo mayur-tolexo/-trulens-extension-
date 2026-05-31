@@ -152,7 +152,6 @@
       <div class="tl-setting-row">
         <span class="tl-setting-label">Source</span>
         <select id="providerMode">
-          <option value="proxy">Hosted proxy</option>
           <option value="anthropic">Anthropic-compatible (Anthropic, MiniMax)</option>
           <option value="openai-compatible">OpenAI-compatible (MiniMax, OpenAI…)</option>
         </select>
@@ -170,6 +169,7 @@
         <input type="password" id="apiKey" placeholder="paste your key…" autocomplete="off">
       </div>
       <p class="tl-key-help">Stored only in your browser; sent only to the provider you choose, only when you run AI analysis.</p>
+      <p class="tl-key-help">Changes apply after you reload the page.</p>
       <div class="tl-test-row">
         <button type="button" id="test-btn" class="tl-test-btn">Test connection</button>
         <span id="test-status" class="tl-test-status"></span>

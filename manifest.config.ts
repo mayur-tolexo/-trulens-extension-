@@ -1,9 +1,11 @@
 import { defineManifest } from '@crxjs/vite-plugin';
+import { readFileSync } from 'node:fs';
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 export default defineManifest({
   manifest_version: 3,
   name: 'TruLens — Review Genuineness',
-  version: '1.0.0',
-  description: 'Spot fake reviews on Google Maps — instant on-device genuineness scores, with optional AI deep-analysis.',
+  version,
+  description: 'Spot fake reviews on Google Maps — instant local genuineness scores, plus optional AI deep-analysis using your own API key.',
   icons: {
     16: 'icon-16.png', 32: 'icon-32.png', 48: 'icon-48.png', 128: 'icon-128.png'
   },
@@ -20,9 +22,8 @@ export default defineManifest({
   host_permissions: [
     'https://www.google.com/maps/*',
     // LLM endpoints — needed so the service worker fetch bypasses CORS
-    'https://api.minimax.io/*', 'https://api.minimaxi.com/*',
-    'https://api.anthropic.com/*', 'https://api.openai.com/*',
-    'https://openrouter.ai/*'
+    'https://api.minimax.io/*',
+    'https://api.anthropic.com/*'
   ],
   // NOTE: content_scripts are injected post-build as a self-contained IIFE by
   // scripts/build-content.mjs. CRXJS's loader uses a dynamic import() that
