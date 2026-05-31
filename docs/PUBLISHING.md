@@ -9,45 +9,18 @@ Step-by-step upload guide for TruLens v1.0.0. Complete every step in order.
 **Option A — BYOK-only (ship now, no server needed)**
 The current build ships as-is. AI deep analysis is dormant until a user adds their own API key in Settings. No proxy deployment required.
 
-**Option B — Free shared AI (requires proxy deployment first)**
-You host an AWS Lambda Function URL + DynamoDB table that holds your MiniMax key server-side. Users get up to 40 free AI analyses per day without entering a key. Continue to Step 1 if choosing this option; skip to Step 2 if choosing Option A.
+**Option B — Free shared AI (proxy already deployed for this owner)**
+The proxy is **already live** — AWS Lambda + DynamoDB + API Gateway — and `DEFAULT_PROXY_URL` is already set in `src/types.ts`. The packaged `trulens-v1.0.0.zip` includes the free tier as-is. No re-deployment is needed to publish. See Step 1 only if you need to redeploy or set up your own instance.
 
 ---
 
-## Step 1 — (Tier B only) Deploy the AWS Lambda Proxy
+## Step 1 — (Optional / already done) Deploy the AWS Lambda Proxy
 
-> **Security:** Use a freshly rotated MiniMax key. NEVER commit the key to the repo. If you used a key during development, rotate it now before go-live.
+> **Security note:** Always use a freshly rotated MiniMax key for any new deployment. NEVER commit the key to the repo.
 
-**Prerequisites:** AWS CLI configured (`aws configure`) and AWS SAM CLI installed (`brew install aws-sam-cli` or `pip install aws-sam-cli`).
+**The free-AI proxy is already deployed** (AWS Lambda + DynamoDB + API Gateway) and `DEFAULT_PROXY_URL` is set in `src/types.ts`, so `trulens-v1.0.0.zip` already includes the free tier. To redeploy or deploy your own instance, see [`proxy/aws/README.md`](../proxy/aws/README.md) (boto3 `deploy.py` — recommended — or the SAM `template.yaml`).
 
-**1a. Build the Lambda package:**
-```sh
-cd proxy/aws
-sam build
-```
-
-**1b. Deploy (first time — guided):**
-```sh
-sam deploy --guided
-```
-Accept the defaults for stack name and region. When prompted for `MinimaxApiKey`, enter your fresh (rotated) MiniMax key — this parameter is `NoEcho` so it does not echo to the terminal and is **not saved** to `samconfig.toml`. Optionally change `DailyLimit` (default `40`) or `Model` (default `MiniMax-M2`). Save the config to `samconfig.toml` when asked so future deploys can skip `--guided`.
-
-> **Caution:** `samconfig.toml` stores your deployment parameters for convenience. Review it before committing to ensure no secrets are present. The `MinimaxApiKey` is NoEcho and will not appear there, but double-check.
-
-**1c. Copy the ProxyUrl output:**
-After a successful deploy, SAM prints:
-```
-ProxyUrl    https://<id>.lambda-url.<region>.on.aws/
-```
-Copy that URL.
-
-**1d. Wire the URL into the extension:**
-Open `src/types.ts` and set:
-```typescript
-export const DEFAULT_PROXY_URL = 'https://<id>.lambda-url.<region>.on.aws/';
-```
-
-For the full deploy guide (including subsequent deploys and rate-limit tuning), see [`proxy/aws/README.md`](../proxy/aws/README.md).
+For the full deploy guide (including rate-limit tuning and idempotent re-runs), see [`proxy/aws/README.md`](../proxy/aws/README.md).
 
 > **Alternative:** A Cloudflare Workers deployment (`proxy/worker.ts` + `proxy/wrangler.toml`) is also available as an alternative to AWS. See [`proxy/README.md`](../proxy/README.md) for details.
 
@@ -159,10 +132,10 @@ Copy from `docs/STORE_LISTING.md` into the dashboard fields:
 | Host: `https://www.google.com/maps/*` | The extension's content script must read review text and metadata from Google Maps place pages in order to compute genuineness scores and inject shield badges beside each review. This is the extension's entire core function. |
 | Host: `https://api.minimax.io/*` | The extension's service worker calls MiniMax when the user opts into AI deep analysis with a MiniMax-compatible key (BYOK mode). No calls are made unless the user has explicitly entered a key and enabled AI analysis. |
 | Host: `https://api.anthropic.com/*` | The extension's service worker calls Anthropic when the user opts into AI deep analysis with an Anthropic key (BYOK mode). No calls are made unless the user has explicitly entered a key and enabled AI analysis. |
-| Host: `https://*.on.aws/*` | The service worker calls the owner-hosted AWS Lambda Function URL when the free shared-AI tier is active. The proxy holds the owner's API key server-side (Lambda env var); no key is transmitted from the extension. Only POST requests to the proxy are made; BYOK users never trigger this permission. |
+| Host: `https://*.execute-api.us-east-1.amazonaws.com/*` | The service worker calls the owner-hosted AWS API Gateway endpoint (backed by Lambda) when the free shared-AI tier is active. The proxy holds the owner's API key server-side (Lambda env var); no key is transmitted from the extension. Only POST requests to the proxy are made; BYOK users never trigger this permission. |
 
 **Data-usage disclosures:**
-- The extension transmits the text of user-selected review(s) — plus a small number of sibling reviews on the same page for context — to the user's chosen AI provider (BYOK) or to the owner's AWS Lambda proxy (free tier), solely to compute a genuineness score. No other data is collected or transmitted.
+- The extension transmits the text of user-selected review(s) — plus a small number of sibling reviews on the same page for context — to the user's chosen AI provider (BYOK) or to the owner's AWS API Gateway endpoint (free tier), solely to compute a genuineness score. No other data is collected or transmitted.
 - The extension does **not** collect personal data, does **not** sell data, and does **not** use data for any purpose unrelated to computing review genuineness scores.
 - The proxy stores only a per-user per-day request counter (keyed on an anonymous device UUID) for rate-limiting; it does **not** store review text.
 
@@ -192,7 +165,7 @@ Go through every item before clicking "Submit for review":
 - [ ] Store icon `public/icon-128.png` ready (128×128 px)
 - [ ] Promo tile `store-assets/promo-440x280.png` ready (440×280 px)
 - [ ] At least one screenshot (1280×800 px) showing badges on a real Google Maps Reviews tab is ready
-- [ ] Build is fresh — if you set `DEFAULT_PROXY_URL` in Step 1d, `npm run build` has been re-run after that change
+- [ ] Build is fresh — `DEFAULT_PROXY_URL` is already set; if you redeployed, `npm run build` has been re-run after updating it
 - [ ] Zip contains no API key (verify by unzipping and grepping)
 - [ ] Privacy policy page is live at the chosen URL and loads without errors in the browser
 - [ ] The URL notice placeholder in `docs/privacy.html` has been replaced with the actual hosted URL
@@ -201,7 +174,7 @@ Go through every item before clicking "Submit for review":
 - [ ] Single-purpose statement filled in on the Privacy practices tab
 - [ ] All five permission justifications filled in (storage + 4 host permissions)
 - [ ] No unhandled `console.error` or promise rejections on a normal page load
-- [ ] `samconfig.toml` reviewed — no secrets present (Tier B AWS only)
+- [ ] If you redeployed via `deploy.py`, verify the printed `PROXY_URL` is set in `src/types.ts` and no secrets were committed
 
 ---
 
@@ -211,7 +184,7 @@ Go through every item before clicking "Submit for review":
 TruLens requests only five permissions total: `storage` and four host permissions. Each has a clear, minimal justification. If the reviewer asks for more detail:
 - The Google Maps host permission is the core function — the extension cannot read or badge reviews without it.
 - The AI API host permissions (`api.minimax.io`, `api.anthropic.com`) are only triggered when the user has explicitly opted in and supplied their own API key. No requests are made otherwise.
-- The `*.on.aws` host permission covers the optional owner-hosted AWS Lambda Function URL proxy for the free shared-AI tier. It is only used for POST requests to the AI endpoint; users on BYOK mode never trigger it. The proxy holds the owner's API key as a Lambda environment variable — no key is shipped in the extension bundle.
+- The `*.execute-api.us-east-1.amazonaws.com` host permission covers the owner-hosted AWS API Gateway endpoint (backed by Lambda) for the free shared-AI tier. It is only used for POST requests to the AI endpoint; users on BYOK mode never trigger it. The proxy holds the owner's API key as a Lambda environment variable — no key is shipped in the extension bundle.
 
 ### Remote code execution
 TruLens uses none. All logic is bundled at build time (Manifest V3). No `eval`, no `Function()` from strings, no dynamically loaded scripts. State this clearly if questioned.
@@ -233,5 +206,5 @@ Screenshots must show the actual running extension on real pages, not mock-ups o
 - Chrome Web Store Developer Program Policies: https://developer.chrome.com/docs/webstore/program-policies/
 - Manifest V3 overview: https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3
 - GitHub Pages setup: https://docs.github.com/en/pages/getting-started-with-github-pages
-- AWS SAM CLI install: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
-- AWS Lambda Function URLs: https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html
+- AWS API Gateway HTTP API: https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html
+- AWS SAM CLI install (alternative deploy method): https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html

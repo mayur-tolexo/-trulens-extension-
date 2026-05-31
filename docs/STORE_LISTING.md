@@ -131,7 +131,7 @@ Paste each line into the corresponding "Permission justification" field when pro
 | Host: `https://www.google.com/maps/*` | The extension's content script must read review text and metadata from Google Maps place pages in order to compute genuineness scores and inject shield badges beside each review. This is the extension's core function — it cannot operate without access to this page. |
 | Host: `https://api.minimax.io/*` | The extension's service worker calls the MiniMax API when the user has opted into AI deep analysis with an OpenAI-compatible (e.g., MiniMax) key. No calls are made unless the user has explicitly entered a key and enabled AI analysis. |
 | Host: `https://api.anthropic.com/*` | The extension's service worker calls the Anthropic API when the user has opted into AI deep analysis with an Anthropic key. No calls are made unless the user has explicitly entered a key and enabled AI analysis. |
-| Host: `https://*.on.aws/*` | The service worker calls the owner-hosted AWS Lambda Function URL when the free shared-AI tier is active. The proxy holds the owner's API key server-side (Lambda env var); no key is transmitted from the extension. Only POST requests to the proxy are made; BYOK users never trigger this permission. |
+| Host: `https://*.execute-api.us-east-1.amazonaws.com/*` | The service worker calls the owner-hosted AWS API Gateway endpoint (backed by a Lambda + DynamoDB proxy) when the free shared-AI tier is active. The proxy holds the owner's API key server-side (Lambda env var); no key is transmitted from the extension. Only POST requests are made; BYOK users never trigger this permission. |
 
 ---
 
@@ -141,5 +141,5 @@ Paste each line into the corresponding "Permission justification" field when pro
 - **Handles user data:** The extension handles user-supplied API keys (stored locally in the browser, never transmitted to TruLens). When AI analysis is enabled by the user, the text of analyzed reviews is sent to the user's chosen provider (BYOK) or the owner's AWS Lambda proxy (free tier).
 - **Sells user data:** No.
 - **Uses data for purposes other than the extension's core function:** No.
-- **Transmits personal data to a server run by the developer:** No. The user's API key goes only to the third-party provider the user chose. In free-tier proxy mode, review text passes through the owner's AWS Lambda Function URL solely to forward it to MiniMax; the proxy does not store review text.
+- **Transmits personal data to a server run by the developer:** No. The user's API key goes only to the third-party provider the user chose. In free-tier proxy mode, review text passes through the owner's AWS API Gateway endpoint (Lambda) solely to forward it to MiniMax; the proxy does not store review text.
 - **Uses remote code:** No. All logic is bundled in the extension package (Manifest V3, no eval, no remote scripts).

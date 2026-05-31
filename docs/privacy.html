@@ -156,7 +156,7 @@
     <h3>Free shared-AI tier (proxy mode)</h3>
     <p>The extension's default provider mode is <em>proxy</em>. When the extension owner has deployed the included AWS Lambda proxy and set <code>DEFAULT_PROXY_URL</code>, AI deep analysis works without a user API key. In this mode:</p>
     <ul>
-      <li>Review text is sent from your browser to the <strong>owner's AWS Lambda Function URL</strong> (not directly to MiniMax).</li>
+      <li>Review text is sent from your browser to the <strong>owner's AWS API Gateway endpoint</strong> (backed by a Lambda function) &mdash; not directly to MiniMax.</li>
       <li>The Lambda function forwards the request to MiniMax using the <strong>owner's server-side API key</strong>. That key is stored as a Lambda environment variable (encrypted at rest by AWS); it is never transmitted to your browser or included in the extension bundle.</li>
       <li>The proxy does <strong>not</strong> log or store review text. It records only a per-user per-day request count (keyed on an anonymous device UUID) in a DynamoDB table for rate-limiting. This counter contains no personal data and expires automatically after 2 days.</li>
       <li>The default daily limit is <strong>40 requests per user per day</strong> (UTC). Once reached, additional requests are rejected until the next UTC day.</li>
@@ -209,8 +209,8 @@
           <td>Allow the extension service worker to call Anthropic when AI analysis is enabled with an Anthropic key.</td>
         </tr>
         <tr>
-          <td><code>https://*.on.aws/*</code></td>
-          <td>Allow the extension service worker to call the owner-hosted AWS Lambda Function URL when the free shared-AI tier is active. The proxy holds the owner's API key server-side (Lambda env var); no key is transmitted from the extension.</td>
+          <td><code>https://*.execute-api.us-east-1.amazonaws.com/*</code></td>
+          <td>Allow the extension service worker to call the owner-hosted AWS API Gateway endpoint (backed by Lambda) when the free shared-AI tier is active. The proxy holds the owner's API key server-side (Lambda env var); no key is transmitted from the extension.</td>
         </tr>
       </tbody>
     </table>

@@ -5,19 +5,21 @@ The MiniMax API key lives only as a server-side secret — it is never committed
 
 ---
 
-## Option 1 — AWS Lambda + DynamoDB (recommended)
+## Option 1 — AWS Lambda + DynamoDB + API Gateway (recommended)
 
-The preferred deployment uses **AWS SAM** to deploy a Lambda Function URL backed by a DynamoDB rate-limit table.
+The preferred deployment uses **`deploy.py`** (a self-contained boto3 script) to create an API Gateway HTTP API in front of a Lambda function backed by a DynamoDB rate-limit table. No SAM CLI required.
 
 - Source: `proxy/aws/index.mjs` (Lambda handler, Node 20)
-- Infrastructure: `proxy/aws/template.yaml` (SAM template — DynamoDB PAY_PER_REQUEST + Lambda Function URL, AuthType NONE)
+- Deploy script: `proxy/aws/deploy.py` (boto3 — **recommended**)
+- SAM template (alternative): `proxy/aws/template.yaml`
 - Deploy guide: [`proxy/aws/README.md`](aws/README.md)
 
 **Key facts:**
-- The `MinimaxApiKey` SAM parameter is `NoEcho` and is stored as a Lambda environment variable (encrypted at rest). It is never written to `samconfig.toml` or the repo.
+- `MINIMAX_API_KEY` is passed as an environment variable at deploy time and stored as a Lambda environment variable (encrypted at rest by AWS). It is never written to the repo.
 - Rate-limiting uses DynamoDB atomic counters with a 2-day TTL. Default: 40 requests per user per UTC day.
-- The deployed Function URL looks like `https://<id>.lambda-url.<region>.on.aws/`. Paste it into `DEFAULT_PROXY_URL` in `src/types.ts` and rebuild.
-- The extension's host permission for this URL is `https://*.on.aws/*`.
+- The deployed API Gateway endpoint looks like `https://<id>.execute-api.us-east-1.amazonaws.com/`. Paste it into `DEFAULT_PROXY_URL` in `src/types.ts` and rebuild.
+- The extension's host permission for this endpoint is `https://*.execute-api.us-east-1.amazonaws.com/*`.
+- `deploy.py` is idempotent — safe to re-run to update code or rotate the key.
 
 ---
 
@@ -38,7 +40,7 @@ wrangler secret put MINIMAX_API_KEY
 wrangler deploy
 ```
 
-The Worker stores rate-limit counters in a Cloudflare KV namespace (48-hour TTL). The deployed URL ends in `.workers.dev`. Set it as `DEFAULT_PROXY_URL` in `src/types.ts` and change the host permission in `manifest.config.ts` from `https://*.on.aws/*` to `https://*.workers.dev/*`.
+The Worker stores rate-limit counters in a Cloudflare KV namespace (48-hour TTL). The deployed URL ends in `.workers.dev`. Set it as `DEFAULT_PROXY_URL` in `src/types.ts` and update the host permission in `manifest.config.ts` to `https://*.workers.dev/*`.
 
 ---
 
