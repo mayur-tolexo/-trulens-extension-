@@ -112,4 +112,4 @@ If this policy changes materially, the "Last updated" date at the top of this do
 
 ## Contact
 
-If you have questions or concerns about this privacy policy, please contact: **[your-email@example.com]** *(replace with the developer's actual contact address before publishing).*
+If you have questions or concerns about this privacy policy, please contact: **mayur.das@neevcloud.com**
