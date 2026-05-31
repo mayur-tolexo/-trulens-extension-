@@ -112,4 +112,4 @@ If this policy changes materially, the "Last updated" date at the top of this do
 
 ## Contact
 
-If you have questions or concerns about this privacy policy, please contact: **mayur.das@neevcloud.com**
+If you have questions or concerns about this privacy policy, please contact: **mayur.das4@gmail.com**

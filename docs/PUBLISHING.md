@@ -197,7 +197,7 @@ Go through every item before clicking "Submit for review":
 - [ ] Privacy policy page is live at the chosen URL and loads without errors in the browser
 - [ ] The URL notice placeholder in `docs/privacy.html` has been replaced with the actual hosted URL
 - [ ] Privacy policy URL is entered in the store listing
-- [ ] Contact email placeholder `[your-email@example.com]` in `PRIVACY.md` and `docs/privacy.html` replaced with your real address
+- [ ] Contact email placeholder `mayur.das4@gmail.com` in `PRIVACY.md` and `docs/privacy.html` replaced with your real address
 - [ ] Single-purpose statement filled in on the Privacy practices tab
 - [ ] All five permission justifications filled in (storage + 4 host permissions)
 - [ ] No unhandled `console.error` or promise rejections on a normal page load
