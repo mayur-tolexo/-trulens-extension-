@@ -48,11 +48,12 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
   perSite: { amazon: true, flipkart: true, googleMaps: true },
-  providerMode: 'proxy',
+  // Bring-your-own-key: AI deep-analysis stays dormant until the user adds a key.
+  providerMode: 'openai-compatible',
   apiKey: '',
-  baseUrl: '',
-  model: 'claude-sonnet-4-6',
-  proxyUrl: 'https://trulens-proxy.example.workers.dev/analyze',
+  baseUrl: 'https://api.minimax.io/v1',
+  model: 'MiniMax-M2',
+  proxyUrl: '',
   autoDeep: true
 };
 

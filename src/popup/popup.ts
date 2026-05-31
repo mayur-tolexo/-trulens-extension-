@@ -1,5 +1,5 @@
 import './popup.css';
-import type { ProductSummary, Settings } from '../types';
+import { DEFAULT_SETTINGS, type ProductSummary, type Settings } from '../types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -131,6 +131,10 @@ async function loadSettings() {
   (document.getElementById('apiKey')       as HTMLInputElement).value   = s.apiKey;
   (document.getElementById('baseUrl')      as HTMLInputElement).value   = s.baseUrl;
   (document.getElementById('model')        as HTMLInputElement).value   = s.model;
+
+  // Show the "add a key" hint when AI isn't configured yet.
+  const configured = s.providerMode === 'proxy' ? !!s.proxyUrl : !!s.apiKey;
+  (document.getElementById('ai-hint') as HTMLElement).style.display = configured ? 'none' : 'flex';
 }
 
 // Picking a provider auto-fills sensible base URL + model so it works out of the box.
@@ -227,8 +231,16 @@ function showSettingsError() {
   document.body.appendChild(err);
 }
 
+function wireReset() {
+  const btn = document.getElementById('reset-btn') as HTMLButtonElement;
+  btn.addEventListener('click', async () => {
+    await send({ type: 'setSettings', patch: DEFAULT_SETTINGS });
+    location.reload();
+  });
+}
+
 loadSettings()
-  .then(() => { wireSettings(); wireTest(); })
+  .then(() => { wireSettings(); wireTest(); wireReset(); })
   .catch(showSettingsError);
 
 loadSummary();

@@ -2,9 +2,19 @@ import { defineManifest } from '@crxjs/vite-plugin';
 export default defineManifest({
   manifest_version: 3,
   name: 'TruLens — Review Genuineness',
-  version: '0.1.0',
-  description: 'Scores how genuine reviews are on Amazon, Flipkart and Google Maps.',
-  action: { default_popup: 'src/popup/popup.html' },
+  version: '1.0.0',
+  description: 'Scores how genuine product & place reviews are on Amazon, Flipkart and Google Maps — instantly, on-device.',
+  icons: {
+    16: 'icon-16.png', 32: 'icon-32.png', 48: 'icon-48.png', 128: 'icon-128.png'
+  },
+  action: {
+    default_popup: 'src/popup/popup.html',
+    default_icon: { 16: 'icon-16.png', 32: 'icon-32.png', 48: 'icon-48.png', 128: 'icon-128.png' }
+  },
+  options_ui: {
+    page: 'src/onboarding/onboarding.html',
+    open_in_tab: true
+  },
   background: { service_worker: 'src/background/index.ts', type: 'module' },
   permissions: ['storage'],
   host_permissions: [

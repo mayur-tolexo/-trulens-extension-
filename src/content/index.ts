@@ -35,7 +35,8 @@ function cleanTitle(): string | null {
 }
 
 const TAG = '[TruLens]';
-const log = (...a: unknown[]) => console.log(TAG, ...a);
+const DEBUG = false; // flip to true for verbose console diagnostics
+const log = (...a: unknown[]) => { if (DEBUG) console.log(TAG, ...a); };
 
 // Module-level map of review id → ScoreResult, exposed to popup via message
 const pageResults = new Map<string, ScoreResult>();
@@ -96,7 +97,10 @@ if (adapter) {
 }
 
 function init(a: NonNullable<ReturnType<typeof adapterFor>>, settings?: Settings) {
-  const providerReady = !!settings && (settings.providerMode === 'proxy' || !!settings.apiKey);
+  // AI is "ready" only when actually configured: a key for BYOK modes, or a
+  // proxy URL for proxy mode. Prevents auto-analysis from firing for new users.
+  const providerReady = !!settings &&
+    (settings.providerMode === 'proxy' ? !!settings.proxyUrl : !!settings.apiKey);
   const autoDeep = !!settings && settings.autoDeep !== false && providerReady;
 
   const scored = new Set<string>();

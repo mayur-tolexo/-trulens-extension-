@@ -10,6 +10,19 @@ and Google Maps. Instant local heuristics badge every visible review; opt-in LLM
 - `npm run build` — produce `dist/`
 - Load `dist/` via chrome://extensions → Developer mode → Load unpacked.
 
+## Build & package
+```sh
+npm run build     # compile TypeScript, bundle assets → dist/
+npm run package   # zip dist/ → trulens-v<version>.zip (ready to upload to the Chrome Web Store)
+```
+See [`docs/PUBLISHING.md`](docs/PUBLISHING.md) for the full store submission checklist.
+
+## Privacy
+All review scoring runs entirely on-device — no data leaves the browser for local heuristics.
+AI deep analysis is opt-in, bring-your-own-key, and sends review text directly from your browser to your chosen provider (MiniMax / OpenAI / Anthropic / OpenRouter).
+TruLens has no server, no analytics, and never receives your data.
+Full policy: [`PRIVACY.md`](PRIVACY.md) · [hosted HTML](docs/privacy.html)
+
 ## Architecture
 See `docs/superpowers/specs/2026-05-30-trulens-design.md`.
 - `src/scoring-core` — pure heuristic engine (unit-tested)

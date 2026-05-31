@@ -146,3 +146,8 @@ vite.config.ts.timestamp-*
 .superpowers/
 node_modules/
 dist/
+
+# Build artifacts
+trulens-v*.zip
+public/icon-*.png
+public/promo-*.png

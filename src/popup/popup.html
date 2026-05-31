@@ -3,7 +3,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TruLens</title>
+  <link rel="icon" type="image/png" href="/icon-32.png">
   <style>
+    .tl-ai-hint { display:none; align-items:flex-start; gap:8px; background:#eef4ff; border:1px solid #cfe0ff;
+      color:#23408a; border-radius:9px; padding:9px 11px; font:12px/1.45 system-ui,sans-serif; margin:0 0 4px; }
+    .tl-ai-hint a { color:#2742e6; font-weight:600; }
+    .tl-key-help { font:11.5px system-ui,sans-serif; color:#6b7280; margin:2px 0 0; }
+    .tl-key-help a { color:#2742e6; }
+    .tl-reset { margin-top:12px; background:none; border:1px solid #e3e6ea; color:#6b7280;
+      border-radius:8px; padding:6px 12px; font:600 12px system-ui,sans-serif; cursor:pointer; }
+    .tl-reset:hover { background:#f6f7f9; color:#1a1a1a; }
     .tl-test-row { display:flex; align-items:center; gap:10px; padding:10px 0 2px; flex-wrap:wrap; }
     .tl-test-btn { border:0; border-radius:8px; padding:7px 14px; font:600 12px system-ui,sans-serif;
       color:#fff; background:linear-gradient(135deg,#3b7dff,#2f6bff); cursor:pointer; }
@@ -21,12 +30,18 @@
 
   <!-- Header -->
   <header class="tl-header">
-    <div class="tl-header-icon">🛡</div>
+    <img class="tl-header-icon" src="/icon-32.png" width="24" height="24" alt="TruLens">
     <div class="tl-header-text">
       <span class="tl-header-name">TruLens</span>
       <span class="tl-header-tagline">Review genuineness</span>
     </div>
   </header>
+
+  <!-- AI status hint (shown when no API key is configured) -->
+  <div class="tl-ai-hint" id="ai-hint">
+    <span>⚡</span>
+    <span>Instant on-device scoring is on. For sharper <b>AI verdicts</b>, add an API key in Settings below. <a id="get-key-link" href="https://platform.minimax.io/" target="_blank" rel="noopener">Get a free key</a>.</span>
+  </div>
 
   <!-- Trust Summary -->
   <div class="tl-section" id="summary-section">
@@ -152,12 +167,14 @@
       </div>
       <div class="tl-setting-row">
         <span class="tl-setting-label">API Key</span>
-        <input type="text" id="apiKey" placeholder="sk-ant-…">
+        <input type="password" id="apiKey" placeholder="paste your key…" autocomplete="off">
       </div>
+      <p class="tl-key-help">Stored only in your browser; sent only to the provider you choose, only when you run AI analysis.</p>
       <div class="tl-test-row">
         <button type="button" id="test-btn" class="tl-test-btn">Test connection</button>
         <span id="test-status" class="tl-test-status"></span>
       </div>
+      <button type="button" id="reset-btn" class="tl-reset">Reset to defaults</button>
     </details>
   </div>
 

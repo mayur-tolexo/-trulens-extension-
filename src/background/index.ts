@@ -2,6 +2,13 @@ import { runDeepAnalysis, testConnection } from './llm';
 import { getCached, setCached } from './cache';
 import { getSettings, setSettings } from './settings';
 
+// Open the onboarding/options page on first install only (not on update or reload).
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('src/onboarding/onboarding.html') });
+  }
+});
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
     try {

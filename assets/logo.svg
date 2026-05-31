@@ -1,0 +1,13 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tlShield" x1="22" y1="12" x2="106" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3F6BFF"/>
+      <stop offset="1" stop-color="#2742E6"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield -->
+  <path d="M64 12 L104 26 V62 C104 90 86 108 64 116 C42 108 24 90 24 62 V26 Z" fill="url(#tlShield)"/>
+  <path d="M64 12 L104 26 V62 C104 90 86 108 64 116 C42 108 24 90 24 62 V26 Z" stroke="#1B2EAE" stroke-width="2" opacity="0.22"/>
+  <!-- Checkmark -->
+  <path d="M45 65 L58 78 L85 49" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

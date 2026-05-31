@@ -20,7 +20,7 @@ describe('buildRequest', () => {
     expect(r.url).toBe('https://x.test/v1/chat/completions');
   });
   it('anthropic: posts to anthropic messages with x-api-key', () => {
-    const r = buildRequest(review, [], s({ providerMode: 'anthropic', apiKey: 'sk-ant', model: 'claude-sonnet-4-6' }));
+    const r = buildRequest(review, [], s({ providerMode: 'anthropic', baseUrl: '', apiKey: 'sk-ant', model: 'claude-sonnet-4-6' }));
     expect(r.url).toBe('https://api.anthropic.com/v1/messages');
     expect(r.headers['x-api-key']).toBe('sk-ant');
     expect(JSON.parse(r.body).model).toBe('claude-sonnet-4-6');
@@ -36,7 +36,7 @@ describe('buildRequest', () => {
     expect(JSON.parse(r.body).model).toBe('MiniMax-M2.7');
   });
   it('anthropic: empty baseUrl falls back to official Anthropic and sets x-api-key', () => {
-    const r = buildRequest(review, [], s({ providerMode: 'anthropic', apiKey: 'sk' }));
+    const r = buildRequest(review, [], s({ providerMode: 'anthropic', baseUrl: '', apiKey: 'sk' }));
     expect(r.url).toBe('https://api.anthropic.com/v1/messages');
     expect(r.headers['x-api-key']).toBe('sk');
   });
